@@ -1,0 +1,19 @@
+repository_type: pipeline
+
+nf_core_version: 3.3.2
+
+lint: {}
+
+template:
+  org: nf-core
+  name: ontvar
+  description: Comprehensive structural variant calling and consensus set generation
+    from ONT's long read sequencing data
+  author: Manas Sehgal
+  version: 0.0.1
+  force: true
+  outdir: .
+  skip_features:
+    - fastqc
+    - gpu
+  is_nfcore: true
