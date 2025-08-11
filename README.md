@@ -20,7 +20,16 @@
 
 ## Introduction
 
-**nf-core/ontvar** is a bioinformatics pipeline that ...
+**nf-core/ontvar** is a structural variant (SV) discovery pipeline for long-read sequencing data. It integrates multiple SV callers, merges and filters variants, annotates them with population frequency and gene-level information, and produces a high-confidence cohort-wide SV callset ready for interpretation.
+
+### Key Features
+
+- SV calling with Sniffles, cuteSV, and Severus (including variant filtering with matched control sample)
+- Sample-level SV merging and filtering (≥2 caller support)
+- Cohort-level SV consensus generation with Jasmine
+- Population frequency annotation and filtering with WGS and LRS-based variant resources
+- Gene and clinical annotation using AnnotSV
+- SV count summaries and MultiQC reporting
 
 <!-- TODO nf-core:
    Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the

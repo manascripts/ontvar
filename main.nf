@@ -15,7 +15,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { ONTVAR  } from './workflows/ontvar'
+include { ONTVAR } from './workflows/ontvar'
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_ontvar_pipeline'
 include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_ontvar_pipeline'
 include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_ontvar_pipeline'
@@ -26,10 +26,9 @@ include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_ontv
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-// TODO nf-core: Remove this line if you don't need a FASTA file
 //   This is an example of how to use getGenomeAttribute() to fetch parameters
 //   from igenomes.config using `--genome`
-params.fasta = getGenomeAttribute('fasta')
+//   params.fasta = getGenomeAttribute('fasta')
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -38,23 +37,29 @@ params.fasta = getGenomeAttribute('fasta')
 */
 
 //
-// WORKFLOW: Run main analysis pipeline depending on type of input
+// WORKFLOW
 //
 workflow NFCORE_ONTVAR {
 
     take:
     samplesheet // channel: samplesheet read in from --input
+    outdir
+    reference
 
     main:
-
     //
     // WORKFLOW: Run pipeline
     //
     ONTVAR (
-        samplesheet
+        samplesheet,
+        outdir,
+        reference
     )
     emit:
     multiqc_report = ONTVAR.out.multiqc_report // channel: /path/to/multiqc_report.html
+    versions              = ONTVAR.out.versions
+    cohort_filtered_vcf   = ONTVAR.out.cohort_filtered_vcf
+    cohort_annotated_table= ONTVAR.out.cohort_annotated_table
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,7 +86,9 @@ workflow {
     // WORKFLOW: Run main workflow
     //
     NFCORE_ONTVAR (
-        PIPELINE_INITIALISATION.out.samplesheet
+        PIPELINE_INITIALISATION.out.samplesheet,
+        params.outdir,
+        params.reference
     )
     //
     // SUBWORKFLOW: Run completion tasks

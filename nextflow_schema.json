@@ -79,7 +79,15 @@
                     "fa_icon": "fas fa-ban",
                     "hidden": true,
                     "default": "s3://ngi-igenomes/igenomes/"
-                }
+                },
+                "reference": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "description": "Reference genome FASTA file.",
+                    "fa_icon": "fas fa-file-alt",
+                    "help_text": "Path to the reference genome FASTA file. This is used for alignment and variant calling. If you don't have a BWA index available this will be generated for you automatically. Combine with `--save_reference` to save BWA index for future runs."
+                }  
             }
         },
         "institutional_config_options": {
@@ -226,6 +234,403 @@
                     "hidden": true
                 }
             }
+        },
+        "sniffles": {
+            "title": "Sniffles options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for the Sniffles SV caller.",
+            "properties": {
+                "minsupport": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Minimum number of supporting reads for a SV to be reported."
+                },
+                "minsvlen": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Minimum SV length (in bp)."
+                },
+                "tandem_repeats" : {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "default": "${projectDir}/assets/vntr/hg38.p14.trf.bed",
+                    "description": "Path to tandem repeats BED file for Sniffles."
+                },
+                "phase": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Determine the phase of the SV calls (requires phased alignments)."
+                },
+                "mapq": {
+                    "type": "integer",
+                    "default": 20,
+                    "description": "Alignments with mapping quality lower than this value will be ignored."
+                },
+                "cluster-merge-pos": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "Maximum distance between breakpoints to merge into a single SV."
+                },
+                "sniffles_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to Sniffles."
+                }
+            }
+        },
+        "cutesv": {
+            "title": "CuteSV options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for the CuteSV SV caller.",
+            "properties": {
+                "min_support": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Minimum number of supporting reads for SV calling."
+                },
+                "min_size": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Minimum SV size to call (in bp)."
+                },
+                "min_mapq": {
+                    "type": "integer",
+                    "default": 20,
+                    "description": "Minimum mapping quality."
+                },
+                "genotype": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable genotyping."
+                },
+                "max_cluster_bias_INS": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "Maximum distance to cluster read together for insertions (recommended for ONT data)."
+                },
+                "diff_ratio_merging_INS": {
+                    "type": "number",
+                    "default": 0.3,
+                    "description": "Do not merge breakpoints with basepair identity more than this value for insertions (recommended for ONT data)."
+                },
+                "max_cluster_bias_DEL": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "Maximum distance to cluster read together for deletions (recommended for ONT data)."
+                },
+                "diff_ratio_merging_DEL": {
+                    "type": "number",
+                    "default": 0.3,
+                    "description": "Do not merge breakpoints with basepair identity more than this value for deletions (recommended for ONT data)."
+                },
+                "cutesv_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to CuteSV."
+                }
+            }
+        },
+        "severus": {
+            "title": "Severus options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for the Severus SV caller.",
+            "properties": {
+                "min_sv_size": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Minimum SV size to call (in bp)."
+                },
+                "min_mapq": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Minimum mapping quality considered for SV calling."
+                },
+                "vntr_bed": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "${projectDir}/assets/vntr/hg38.p14.trf.bed",
+                    "description": "Path to VNTR BED file."
+                },
+                "phasing_vcf": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "default": null,
+                    "description": "Path to phasing VCF if phased BAMs are supplied."
+                },
+                "PON": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "${projectDir}/assets/pon/PoN_1000G_hg38_extended.tsv.gz",
+                    "description": "Panel of Normals file."
+                },
+                "min_support": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Minimum number of reads supporting a breakpoint."
+                },
+                "severus_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to Severus."
+                }
+            }
+        },
+        "jasminesv_sample": {
+            "title": "JasmineSV sample options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for JasmineSV sample consensus calling.",
+            "properties": {
+                "min_overlap": {
+                    "type": "number",
+                    "default": 0.7,
+                    "description": "The minimum reciprocal overlap for DEL/INV/DUP SVs."
+                },
+                "spec_len": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Minimum SV length for consensus calling (in bp)."
+                },
+                "min_seq_id": {
+                    "type": "number",
+                    "default": 0.7,
+                    "description": "Minimum sequence identity (in bp)."
+                },
+                "max_dist_linear": {
+                    "type": "number",
+                    "default": 0.5,
+                    "description": "the proportion of the length of each variant to set distance threshold to."
+                },
+                "max_dist": {
+                    "type": "integer",
+                    "default": 3000,
+                    "description": "The maximum distance variants can be apart when being merged (in bp)."
+                },
+                "min_dist": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "The minimum distance threshold a variant can have when using max_dist_linear (in bp)."
+                },
+                "pre_normalize": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Run type normalization before merging"
+                },
+                "normalize_type": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Normalize SV types (--normalize_type)."
+                },
+                "ignore_strand": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Allow variants with different strands to be merged"
+                },
+                "non_mutual_distance": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "No longer require a pair of points to be within both of their distance thresholds"
+                },
+                "output_genotypes": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Output genotypes"
+                },
+                "jasminesv_sample_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to JasmineSV."
+                }
+            }
+        },
+        "jasminesv_cohort": {
+            "title": "JasmineSV cohort options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for JasmineSV cohort consensus calling.",
+            "properties": {
+                "min_overlap": {
+                    "type": "number",
+                    "default": 0.7,
+                    "description": "The minimum reciprocal overlap for DEL/INV/DUP SVs."
+                },
+                "spec_len": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Minimum SV length for consensus calling (in bp)."
+                },
+                "min_seq_id": {
+                    "type": "number",
+                    "default": 0.7,
+                    "description": "Minimum sequence identity (in bp)."
+                },
+                "max_dist_linear": {
+                    "type": "number",
+                    "default": 0.5,
+                    "description": "the proportion of the length of each variant to set distance threshold to."
+                },
+                "max_dist": {
+                    "type": "integer",
+                    "default": 3000,
+                    "description": "The maximum distance variants can be apart when being merged (in bp)."
+                },
+                "min_dist": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "The minimum distance threshold a variant can have when using max_dist_linear (in bp)."
+                },
+                "pre_normalize": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Run type normalization before merging"
+                },
+                "normalize_type": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Normalize SV types (--normalize_type)."
+                },
+                "ignore_strand": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Allow variants with different strands to be merged"
+                },
+                "non_mutual_distance": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "No longer require a pair of points to be within both of their distance thresholds"
+                },
+                "output_genotypes": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Output genotypes"
+                },
+                "jasminesv_cohort_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to JasmineSV."
+                }
+            }
+        },
+        "svdb_query": {
+            "title": "SVDB options",
+            "type": "object",
+            "fa_icon": "fas fa-database",
+            "description": "Parameters for SVDB annotation.",
+            "properties": {
+                "databases": {
+                    "type": "array",
+                    "description": "List of SVDB database files with label prefix, e.g. AFgnomAD:path/to/file.vcf.gz"
+                },
+                "in_frq": {
+                    "type": "string",
+                    "default": "AF,AFneedLR",
+                    "description": "The frequency count tag, if used, this tag must be present in the INFO column of the input DB(usually set to AF or FRQ)."
+                },
+                "out_frq": {
+                    "type": "string",
+                    "default": "AFgnomAD,AFneedLR",
+                    "description": "The frequency count tag to be included in the output"
+                },
+                "in_occ": {
+                    "type": "string",
+                    "default": "AN,AN",
+                    "description": "The allele count tag, if used, this tag must be present in the INFO column of the input DB(usually set to AC or OCC)."
+                },
+                "out_occ": {
+                    "type": "string",
+                    "default": "ANgnomAD,ANneedLR",
+                    "description": "The allele count tag to be included in the output."
+                },
+                "bnd_distance": {
+                    "type": "integer",
+                    "default": 2500,
+                    "description": "The maximum distance between two similar breakpoints."
+                },
+                "overlap": {
+                    "type": "number",
+                    "default": 0.6,
+                    "description": "Minimum reciprocal overlap (in bp)."
+                },
+                "prefix": {
+                    "type": "string",
+                    "default": "cohort",
+                    "description": "Prefix for output file."
+                },
+                "svdb_query_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to SVDB query."
+                }
+            }
+        },
+        "bcftools_view_sample": {
+            "title": "BCFtools view sample options",
+            "type": "object",
+            "fa_icon": "fas fa-filter",
+            "description": "Parameters for BCFtools view sample filtering.",
+            "properties": {
+                "include": {
+                    "type": "array",
+                    "description": "Include filter expression for sample VCFs."
+                },
+                "regions": {
+                    "type": ["string", "null"],
+                    "description": "Restrict to regions file."
+                },
+                "targets": {
+                    "type": ["string", "null"], 
+                    "description": "Restrict to targets file."
+                },
+                "samples": {
+                    "type": ["string", "null"],
+                    "description": "Samples to include."
+                }
+            }
+        },
+        "bcftools_view_cohort": {
+            "title": "BCFtools view cohort options", 
+            "type": "object",
+            "fa_icon": "fas fa-filter",
+            "description": "Parameters for BCFtools view cohort filtering.",
+            "properties": {
+                "include": {
+                    "type": "array",
+                    "description": "Include filter expression for cohort VCFs."
+                },
+                "regions": {
+                    "type": ["string", "null"],
+                    "description": "Restrict to regions file."
+                },
+                "targets": {
+                    "type": ["string", "null"],
+                    "description": "Restrict to targets file."
+                },
+                "samples": {
+                    "type": ["string", "null"],
+                    "description": "Samples to include."
+                }
+            }
+        },
+        "annotsv": {
+            "title": "AnnotSV options",
+            "type": "object",
+            "fa_icon": "fas fa-notes-medical",
+            "description": "Parameters for AnnotSV annotation.",
+            "properties": {
+                "genome_build": {
+                    "type": "string",
+                    "default": "GRCh38",
+                    "description": "Genome build used for annotation."
+                },
+                "output_format": {
+                    "type": "string",
+                    "default": "tsv",
+                    "description": "Output format for AnnotSV."
+                }
+            }
         }
     },
     "allOf": [
@@ -240,6 +645,33 @@
         },
         {
             "$ref": "#/$defs/generic_options"
+        }, 
+        {
+            "$ref": "#/$defs/sniffles"
+        },
+        {
+            "$ref": "#/$defs/cutesv"
+        },
+        {
+            "$ref": "#/$defs/severus"
+        },
+        {
+            "$ref": "#/$defs/jasminesv_sample"
+        },
+        {
+            "$ref": "#/$defs/jasminesv_cohort"
+        },
+        {
+            "$ref": "#/$defs/svdb_query"
+        },
+        {
+            "$ref": "#/$defs/bcftools_view_sample"
+        },
+        {
+            "$ref": "#/$defs/bcftools_view_cohort"
+        },
+        {
+            "$ref": "#/$defs/annotsv"
         }
     ]
 }

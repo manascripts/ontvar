@@ -1,0 +1,5 @@
+name: rename_severus_vcf
+channels:
+  - defaults
+dependencies:
+  - coreutils
