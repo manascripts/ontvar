@@ -20,7 +20,7 @@
 
 ## Introduction
 
-**nf-core/ontvar** is a bioinformatics pipeline that ...
+**nf-core/ontvar** is a comprehensive structural variant calling, filtering, annotation and consensus set generation pipeline for ONT's long read sequencing data.
 
 <!-- TODO nf-core:
    Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
