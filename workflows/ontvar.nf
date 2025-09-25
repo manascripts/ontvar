@@ -8,8 +8,6 @@ include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_ontvar_pipeline'
-<<<<<<< Updated upstream
-=======
 include { SNIFFLES } from '../modules/nf-core/sniffles/main'
 include { CUTESV   } from '../modules/nf-core/cutesv/main'
 include { SEVERUS as SEVERUS_WITH_CONTROL } from '../modules/nf-core/severus/main'
@@ -37,7 +35,6 @@ include { BCFTOOLS_VIEW as CALLER_SUPPORT_FILTER } from '../modules/nf-core/bcft
 include { BCFTOOLS_VIEW as AF_FILTER } from '../modules/nf-core/bcftools/view/main'
 include { BCFTOOLS_VIEW as AF_FILTER_COHORT } from '../modules/nf-core/bcftools/view/main'
 include { BCFTOOLS_SORT as BCFTOOLS_SORT_SAMPLE } from '../modules/nf-core/bcftools/sort/main'
->>>>>>> Stashed changes
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,25 +45,16 @@ include { BCFTOOLS_SORT as BCFTOOLS_SORT_SAMPLE } from '../modules/nf-core/bcfto
 workflow ONTVAR {
 
     take:
-<<<<<<< Updated upstream
-    ch_samplesheet // channel: samplesheet read in from --input
-=======
         ch_samplesheet // channel: samplesheet read in from --input
         ch_output_dir // channel: output directory from --outdir
         reference
         annotsv_annotations
 
->>>>>>> Stashed changes
     main:
 
     ch_versions = Channel.empty()
     ch_multiqc_files = Channel.empty()
 
-<<<<<<< Updated upstream
-    //
-    // Collate and save software versions
-    //
-=======
     ch_sample_info = ch_samplesheet
 
     cases = ch_sample_info
@@ -471,7 +459,6 @@ workflow ONTVAR {
         ch_versions = ch_versions.mix(ANNOTSV_INSTALLANNOTATIONS.out.versions)
     }
 
->>>>>>> Stashed changes
     softwareVersionsToYAML(ch_versions)
         .collectFile(
             storeDir: "${params.outdir}/pipeline_info",
@@ -505,27 +492,6 @@ workflow ONTVAR {
         methodsDescriptionText(ch_multiqc_custom_methods_description))
 
     ch_multiqc_files = ch_multiqc_files.mix(ch_collated_versions)
-<<<<<<< Updated upstream
-    ch_multiqc_files = ch_multiqc_files.mix(
-        ch_methods_description.collectFile(
-            name: 'methods_description_mqc.yaml',
-            sort: true
-        )
-    )
-
-    MULTIQC (
-        ch_multiqc_files.collect(),
-        ch_multiqc_config.toList(),
-        ch_multiqc_custom_config.toList(),
-        ch_multiqc_logo.toList(),
-        [],
-        []
-    )
-
-    emit:multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
-    versions       = ch_versions                 // channel: [ path(versions.yml) ]
-
-=======
     ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml', sort: true))
 
     MULTIQC(
@@ -540,7 +506,6 @@ workflow ONTVAR {
     emit:
         multiqc_report         = MULTIQC.out.report.toList()
         versions               = ch_versions
->>>>>>> Stashed changes
 }
 
 /*

@@ -88,8 +88,6 @@
                     "hidden": true,
                     "default": "s3://ngi-igenomes/igenomes/"
                 }
-<<<<<<< Updated upstream
-=======
             }
         },
         "file_paths": {
@@ -585,7 +583,6 @@
                     "description": "Path to AnnotSV annotations directory or archive.",
                     "fa_icon": "fas fa-folder"
                 }
->>>>>>> Stashed changes
             }
         },
         "institutional_config_options": {
