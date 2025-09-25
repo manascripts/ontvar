@@ -7,27 +7,30 @@
     "items": {
         "type": "object",
         "properties": {
-            "sample": {
+            "sample_id": {
                 "type": "string",
                 "pattern": "^\\S+$",
-                "errorMessage": "Sample name must be provided and cannot contain spaces",
+                "errorMessage": "Sample ID must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
-            "fastq_1": {
+            "bam_path": {
                 "type": "string",
                 "format": "file-path",
                 "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.bam$",
+                "errorMessage": "BAM file path must be provided, cannot contain spaces and must have extension '.bam'"
             },
-            "fastq_2": {
+            "sample_type": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "enum": ["case", "control"],
+                "errorMessage": "Sample type must be either 'case' or 'control'"
+            },
+            "match_id": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "Match ID must be provided and cannot contain spaces"
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["sample_id", "bam_path", "sample_type", "match_id"]
     }
 }
