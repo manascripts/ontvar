@@ -5,8 +5,6 @@
         "https://github.com/nf-core/modules.git": {
             "modules": {
                 "nf-core": {
-<<<<<<< Updated upstream
-=======
                     "annotsv/annotsv": {
                         "branch": "master",
                         "git_sha": "3a1c1c3f76d37d8ae6712962ff0eecc4d850ec21",
@@ -37,13 +35,10 @@
                         "git_sha": "41dfa3f7c0ffabb96a6a813fe321c6d1cc5b6e46",
                         "installed_by": ["modules"]
                     },
->>>>>>> Stashed changes
                     "multiqc": {
                         "branch": "master",
                         "git_sha": "41dfa3f7c0ffabb96a6a813fe321c6d1cc5b6e46",
                         "installed_by": ["modules"]
-<<<<<<< Updated upstream
-=======
                     },
                     "severus": {
                         "branch": "master",
@@ -64,7 +59,6 @@
                         "branch": "master",
                         "git_sha": "41dfa3f7c0ffabb96a6a813fe321c6d1cc5b6e46",
                         "installed_by": ["modules"]
->>>>>>> Stashed changes
                     }
                 }
             },
