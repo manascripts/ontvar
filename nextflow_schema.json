@@ -20,7 +20,7 @@
                     "mimetype": "text/csv",
                     "pattern": "^\\S+\\.csv$",
                     "description": "Path to comma-separated file containing information about the samples in the experiment.",
-                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/ontvar/usage#samplesheet-input).",
+                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 4 columns, and a header row: sample_id,bam_path,sample_type,match_id.",
                     "fa_icon": "fas fa-file-csv"
                 },
                 "outdir": {
@@ -33,7 +33,7 @@
                     "type": "string",
                     "description": "Email address for completion summary.",
                     "fa_icon": "fas fa-envelope",
-                    "help_text": "Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.",
+                    "help_text": "Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits.",
                     "pattern": "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
                 },
                 "multiqc_title": {
@@ -53,7 +53,7 @@
                     "type": "string",
                     "description": "Name of iGenomes reference.",
                     "fa_icon": "fas fa-book",
-                    "help_text": "If using a reference genome configured in the pipeline using iGenomes, use this parameter to give the ID for the reference. This is then used to build the full paths for all required reference genome files e.g. `--genome GRCh38`. \n\nSee the [nf-core website docs](https://nf-co.re/usage/reference_genomes) for more details."
+                    "help_text": "If using a reference genome configured in the pipeline using iGenomes, use this parameter to give the ID for the reference."
                 },
                 "fasta": {
                     "type": "string",
@@ -62,15 +62,23 @@
                     "mimetype": "text/plain",
                     "pattern": "^\\S+\\.fn?a(sta)?(\\.gz)?$",
                     "description": "Path to FASTA genome file.",
-                    "help_text": "This parameter is *mandatory* if `--genome` is not specified. If you don't have a BWA index available this will be generated for you automatically. Combine with `--save_reference` to save BWA index for future runs.",
+                    "help_text": "This parameter is *mandatory* if `--genome` is not specified.",
                     "fa_icon": "far fa-file-code"
+                },
+                "reference": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "description": "Reference genome FASTA file.",
+                    "fa_icon": "fas fa-file-alt",
+                    "help_text": "Path to the reference genome FASTA file. This is used for alignment and variant calling."
                 },
                 "igenomes_ignore": {
                     "type": "boolean",
                     "description": "Do not load the iGenomes reference config.",
                     "fa_icon": "fas fa-ban",
                     "hidden": true,
-                    "help_text": "Do not load `igenomes.config` when running the pipeline. You may choose this option if you observe clashes between custom parameters and those supplied in `igenomes.config`."
+                    "help_text": "Do not load `igenomes.config` when running the pipeline."
                 },
                 "igenomes_base": {
                     "type": "string",
@@ -80,6 +88,504 @@
                     "hidden": true,
                     "default": "s3://ngi-igenomes/igenomes/"
                 }
+<<<<<<< Updated upstream
+=======
+            }
+        },
+        "file_paths": {
+            "title": "File paths",
+            "type": "object",
+            "fa_icon": "fas fa-folder",
+            "description": "Static file paths used by the pipeline.",
+            "properties": {
+                "tandem_repeats": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "${projectDir}/assets/vntr/hg38.p14.trf.bed",
+                    "description": "Path to tandem repeats BED file for Sniffles.",
+                    "fa_icon": "fas fa-file-alt"
+                },
+                "vntr_bed": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "${projectDir}/assets/vntr/hg38.p14.trf.bed",
+                    "description": "Path to VNTR BED file for Severus.",
+                    "fa_icon": "fas fa-file-alt"
+                },
+                "pon_file": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "${projectDir}/assets/pon/PoN_1000G_hg38_extended.tsv.gz",
+                    "description": "Panel of Normals file.",
+                    "fa_icon": "fas fa-database"
+                },
+                "PON": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "${projectDir}/assets/pon/PoN_1000G_hg38_extended.tsv.gz",
+                    "description": "Panel of Normals file (alias for pon_file).",
+                    "fa_icon": "fas fa-database"
+                }
+            }
+        },
+        "svdb_databases": {
+            "title": "SVDB database options",
+            "type": "object",
+            "fa_icon": "fas fa-database",
+            "description": "Parameters for SVDB annotation databases.",
+            "properties": {
+                "svdb_databases": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "default": [
+                        "${projectDir}/assets/svdb_databases/gnomad.v4.1.sv.sites.rmMissing.vcf.gz",
+                        "${projectDir}/assets/svdb_databases/UWONT_450_AF.vcf.gz"
+                    ],
+                    "description": "List of SVDB database files for annotation.",
+                    "fa_icon": "fas fa-database"
+                },
+                "svdb_in_frq": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "default": ["AF", "PFneedLR"],
+                    "description": "The frequency count tags in the database INFO columns.",
+                    "fa_icon": "fas fa-tags"
+                },
+                "svdb_out_frq": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "default": ["AFgnomAD", "AFneedLR"],
+                    "description": "The frequency count tags to be included in the output.",
+                    "fa_icon": "fas fa-tags"
+                },
+                "svdb_in_occ": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "default": ["AN", "AN"],
+                    "description": "The allele count tags in the database INFO columns.",
+                    "fa_icon": "fas fa-tags"
+                },
+                "svdb_out_occ": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "default": ["ANgnomAD", "ANneedLR"],
+                    "description": "The allele count tags to be included in the output.",
+                    "fa_icon": "fas fa-tags"
+                }
+            }
+        },
+        "sniffles_options": {
+            "title": "Sniffles options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for the Sniffles SV caller.",
+            "properties": {
+                "minsupport": {
+                    "type": "integer",
+                    "default": 5,
+                    "minimum": 1,
+                    "description": "Minimum number of supporting reads for a SV to be reported.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "minsvlen": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "description": "Minimum SV length (in bp).",
+                    "fa_icon": "fas fa-ruler"
+                },
+                "phase": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Determine the phase of the SV calls (requires phased alignments).",
+                    "fa_icon": "fas fa-link"
+                },
+                "mapq": {
+                    "type": "integer",
+                    "default": 20,
+                    "minimum": 0,
+                    "maximum": 60,
+                    "description": "Alignments with mapping quality lower than this value will be ignored.",
+                    "fa_icon": "fas fa-chart-bar"
+                },
+                "cluster_merge_pos": {
+                    "type": "integer",
+                    "default": 100,
+                    "minimum": 0,
+                    "description": "Maximum distance between breakpoints to merge into a single SV.",
+                    "fa_icon": "fas fa-compress-arrows-alt"
+                },
+                "sniffles_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to Sniffles. These will be added to the auto-generated arguments.",
+                    "fa_icon": "fas fa-terminal"
+                }
+            }
+        },
+        "cutesv_options": {
+            "title": "CuteSV options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for the CuteSV SV caller.",
+            "properties": {
+                "cutesv_min_support": {
+                    "type": "integer",
+                    "default": 5,
+                    "minimum": 1,
+                    "description": "Minimum number of supporting reads for SV calling.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "min_size": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "description": "Minimum SV size to call (in bp).",
+                    "fa_icon": "fas fa-ruler"
+                },
+                "cutesv_min_mapq": {
+                    "type": "integer",
+                    "default": 20,
+                    "minimum": 0,
+                    "maximum": 60,
+                    "description": "Minimum mapping quality for CuteSV.",
+                    "fa_icon": "fas fa-chart-bar"
+                },
+                "genotype": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable genotyping.",
+                    "fa_icon": "fas fa-dna"
+                },
+                "max_cluster_bias_INS": {
+                    "type": "integer",
+                    "default": 100,
+                    "minimum": 0,
+                    "description": "Maximum distance to cluster read together for insertions (recommended for ONT data).",
+                    "fa_icon": "fas fa-arrows-alt-h"
+                },
+                "diff_ratio_merging_INS": {
+                    "type": "number",
+                    "default": 0.3,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Do not merge breakpoints with basepair identity more than this value for insertions (recommended for ONT data).",
+                    "fa_icon": "fas fa-percentage"
+                },
+                "max_cluster_bias_DEL": {
+                    "type": "integer",
+                    "default": 100,
+                    "minimum": 0,
+                    "description": "Maximum distance to cluster read together for deletions (recommended for ONT data).",
+                    "fa_icon": "fas fa-arrows-alt-h"
+                },
+                "diff_ratio_merging_DEL": {
+                    "type": "number",
+                    "default": 0.3,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Do not merge breakpoints with basepair identity more than this value for deletions (recommended for ONT data).",
+                    "fa_icon": "fas fa-percentage"
+                },
+                "cutesv_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to CuteSV. These will be added to the auto-generated arguments.",
+                    "fa_icon": "fas fa-terminal"
+                }
+            }
+        },
+        "severus_options": {
+            "title": "Severus options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for the Severus SV caller.",
+            "properties": {
+                "min_sv_size": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "description": "Minimum SV size to call (in bp).",
+                    "fa_icon": "fas fa-ruler"
+                },
+                "severus_min_support": {
+                    "type": "integer",
+                    "default": 5,
+                    "minimum": 1,
+                    "description": "Minimum number of reads supporting a breakpoint.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "severus_min_mapq": {
+                    "type": "integer",
+                    "default": 20,
+                    "minimum": 0,
+                    "maximum": 60,
+                    "description": "Minimum mapping quality for Severus.",
+                    "fa_icon": "fas fa-chart-bar"
+                },
+                "severus_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to Severus.",
+                    "fa_icon": "fas fa-terminal"
+                }
+            }
+        },
+        "jasminesv_options": {
+            "title": "JasmineSV options",
+            "type": "object",
+            "fa_icon": "fas fa-object-group",
+            "description": "Parameters for JasmineSV consensus calling.",
+            "properties": {
+                "min_overlap": {
+                    "type": "number",
+                    "default": 0.7,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "The minimum reciprocal overlap for DEL/INV/DUP SVs.",
+                    "fa_icon": "fas fa-percentage"
+                },
+                "spec_len": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "description": "Minimum SV length for consensus calling (in bp).",
+                    "fa_icon": "fas fa-ruler"
+                },
+                "min_seq_id": {
+                    "type": "number",
+                    "default": 0.7,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Minimum sequence identity.",
+                    "fa_icon": "fas fa-percentage"
+                },
+                "max_dist_linear": {
+                    "type": "number",
+                    "default": 0.5,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "The proportion of the length of each variant to set distance threshold to.",
+                    "fa_icon": "fas fa-percentage"
+                },
+                "max_dist": {
+                    "type": "integer",
+                    "default": 3000,
+                    "minimum": 0,
+                    "description": "The maximum distance variants can be apart when being merged (in bp).",
+                    "fa_icon": "fas fa-arrows-alt-h"
+                },
+                "min_dist": {
+                    "type": "integer",
+                    "default": 100,
+                    "minimum": 0,
+                    "description": "The minimum distance threshold a variant can have when using max_dist_linear (in bp).",
+                    "fa_icon": "fas fa-arrows-alt-h"
+                },
+                "pre_normalize": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Run type normalization before merging.",
+                    "fa_icon": "fas fa-align-center"
+                },
+                "normalize_type": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Normalize SV types.",
+                    "fa_icon": "fas fa-align-center"
+                },
+                "ignore_strand": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Allow variants with different strands to be merged.",
+                    "fa_icon": "fas fa-exchange-alt"
+                },
+                "non_mutual_distance": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "No longer require a pair of points to be within both of their distance thresholds.",
+                    "fa_icon": "fas fa-arrows-alt"
+                },
+                "output_genotypes": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Output genotypes.",
+                    "fa_icon": "fas fa-dna"
+                },
+                "spec_reads": {
+                    "type": "integer",
+                    "default": 5,
+                    "minimum": 1,
+                    "description": "Minimum number of reads supporting a variant for specific read analysis.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "jasminesv_sample_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to JasmineSV for sample consensus. These will be added to the auto-generated arguments.",
+                    "fa_icon": "fas fa-terminal"
+                },
+                "jasminesv_cohort_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to JasmineSV for cohort consensus. These will be added to the auto-generated arguments.",
+                    "fa_icon": "fas fa-terminal"
+                }
+            }
+        },
+        "svdb_options": {
+            "title": "SVDB query options",
+            "type": "object",
+            "fa_icon": "fas fa-search",
+            "description": "Parameters for SVDB annotation queries.",
+            "properties": {
+                "bnd_distance": {
+                    "type": "integer",
+                    "default": 2500,
+                    "minimum": 0,
+                    "description": "The maximum distance between two similar breakpoints.",
+                    "fa_icon": "fas fa-arrows-alt-h"
+                },
+                "overlap": {
+                    "type": "number",
+                    "default": 0.8,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Minimum reciprocal overlap.",
+                    "fa_icon": "fas fa-percentage"
+                },
+                "svdb_query_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to SVDB query. These will be added to the auto-generated arguments.",
+                    "fa_icon": "fas fa-terminal"
+                }
+            }
+        },
+        "filtering_options": {
+            "title": "SV filtering options",
+            "type": "object",
+            "fa_icon": "fas fa-filter",
+            "description": "Parameters for SV filtering at different pipeline stages.",
+            "properties": {
+                "min_caller_support": {
+                    "type": "integer",
+                    "default": 1,
+                    "minimum": 1,
+                    "description": "Minimum number of callers required to support an SV.",
+                    "fa_icon": "fas fa-hashtag",
+                    "help_text": "SVs must be supported by at least this many callers to pass filtering."
+                },
+                "max_gnomad_af": {
+                    "type": "number",
+                    "default": 0.1,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Maximum allowed gnomAD allele frequency.",
+                    "fa_icon": "fas fa-percentage",
+                    "help_text": "SVs with gnomAD AF above this threshold will be filtered out. Use 1.0 to disable gnomAD filtering."
+                },
+                "max_needlr_af": {
+                    "type": "number",
+                    "default": 0.006,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Maximum allowed NeedLR allele frequency.",
+                    "fa_icon": "fas fa-percentage",
+                    "help_text": "SVs with NeedLR AF above this threshold will be filtered out. Use 1.0 to disable NeedLR filtering."
+                },
+                "caller_support_filter_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments for caller support filtering.",
+                    "fa_icon": "fas fa-terminal",
+                    "help_text": "Additional BCFtools view arguments for caller support filtering. These are added to the auto-generated --include expression."
+                },
+                "af_filter_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments for allele frequency filtering.",
+                    "fa_icon": "fas fa-terminal",
+                    "help_text": "Additional BCFtools view arguments for AF filtering. These are added to the auto-generated --include expression."
+                }
+            }
+        },
+        "annotsv_options": {
+            "title": "AnnotSV options",
+            "type": "object",
+            "fa_icon": "fas fa-notes-medical",
+            "description": "Parameters for AnnotSV annotation.",
+            "properties": {
+                "genome_build": {
+                    "type": "string",
+                    "default": "GRCh38",
+                    "enum": ["GRCh37", "GRCh38"],
+                    "description": "Genome build used for annotation.",
+                    "fa_icon": "fas fa-dna"
+                },
+                "candidate_genes": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "default": null,
+                    "description": "Path to candidate genes file for AnnotSV.",
+                    "fa_icon": "fas fa-file-alt"
+                },
+                "false_positive_snv": {
+                    "type": ["string", "null"],
+                    "format": "file-path", 
+                    "default": null,
+                    "description": "Path to false positive SNV file for AnnotSV.",
+                    "fa_icon": "fas fa-file-alt"
+                },
+                "gene_transcripts": {
+                    "type": ["string", "null"],
+                    "format": "file-path",
+                    "default": null,
+                    "description": "Path to gene transcripts file for AnnotSV.",
+                    "fa_icon": "fas fa-file-alt"
+                },
+                "output_vcf": {
+                    "type": "integer",
+                    "default": 1,
+                    "enum": [0, 1],
+                    "description": "Output VCF format in addition to TSV (1=yes, 0=no).",
+                    "fa_icon": "fas fa-file-code"
+                },
+                "min_sv_size": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "description": "Minimum SV size to annotate with AnnotSV (in bp). Use 0 to annotate all SVs.",
+                    "fa_icon": "fas fa-ruler"
+                },
+                "annotsv_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to AnnotSV. These will be added to the auto-generated arguments.",
+                    "fa_icon": "fas fa-terminal"
+                }
+            }
+        },
+        "general_options": {
+            "title": "General options",
+            "type": "object",
+            "fa_icon": "fas fa-cog",
+            "description": "General pipeline options.",
+            "properties": {
+                "filter_chr": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Filter chromosomes to chr1-22, X, Y, M.",
+                    "fa_icon": "fas fa-filter"
+                },
+                "annotsv_annotations": {
+                    "type": ["string", "null"],
+                    "format": "directory-path",
+                    "default": null,
+                    "description": "Path to AnnotSV annotations directory or archive.",
+                    "fa_icon": "fas fa-folder"
+                }
+>>>>>>> Stashed changes
             }
         },
         "institutional_config_options": {
@@ -101,7 +607,7 @@
                     "description": "Base directory for Institutional configs.",
                     "default": "https://raw.githubusercontent.com/nf-core/configs/master",
                     "hidden": true,
-                    "help_text": "If you're running offline, Nextflow will not be able to fetch the institutional config files from the internet. If you don't need them, then this is not a problem. If you do need them, you should download the files from the repo and tell Nextflow where to find them with this parameter.",
+                    "help_text": "If you're running offline, Nextflow will not be able to fetch the institutional config files from the internet.",
                     "fa_icon": "fas fa-users-cog"
                 },
                 "config_profile_name": {
@@ -147,7 +653,7 @@
                     "type": "string",
                     "default": "copy",
                     "description": "Method used to save pipeline results to output directory.",
-                    "help_text": "The Nextflow `publishDir` option specifies which intermediate files should be saved to the output directory. This option tells the pipeline what method should be used to move these files. See [Nextflow docs](https://www.nextflow.io/docs/latest/process.html#publishdir) for details.",
+                    "help_text": "The Nextflow `publishDir` option specifies which intermediate files should be saved to the output directory.",
                     "fa_icon": "fas fa-copy",
                     "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"],
                     "hidden": true
@@ -208,7 +714,7 @@
                 "validate_params": {
                     "type": "boolean",
                     "description": "Boolean whether to validate parameters against the schema at runtime",
-                    "default": true,
+                    "default": false,
                     "fa_icon": "fas fa-check-square",
                     "hidden": true
                 },
@@ -234,6 +740,36 @@
         },
         {
             "$ref": "#/$defs/reference_genome_options"
+        },
+        {
+            "$ref": "#/$defs/general_options"
+        },
+        {
+            "$ref": "#/$defs/file_paths"
+        },
+        {
+            "$ref": "#/$defs/svdb_databases"
+        },
+        {
+            "$ref": "#/$defs/sniffles_options"
+        },
+        {
+            "$ref": "#/$defs/cutesv_options"
+        },
+        {
+            "$ref": "#/$defs/severus_options"
+        },
+        {
+            "$ref": "#/$defs/jasminesv_options"
+        },
+        {
+            "$ref": "#/$defs/svdb_options"
+        },
+        {
+            "$ref": "#/$defs/filtering_options"
+        },
+        {
+            "$ref": "#/$defs/annotsv_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"

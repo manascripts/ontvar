@@ -1,0 +1,5 @@
+name: rename_vcf
+channels:
+  - defaults
+dependencies:
+  - coreutils

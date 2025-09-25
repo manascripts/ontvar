@@ -1,0 +1,34 @@
+name: jasmine_header_fix
+description: |
+  Fill missing ## header lines in a Jasmine-merged VCF by collecting INFO/FORMAT definitions from the source caller VCFs and annotating the Jasmine VCF with the missing lines.
+
+keywords:
+  - vcf
+  - jasmine
+  - header
+  - annotate
+
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample/cohort metadata.
+  - jasmine_vcf:
+      type: file
+      description: |
+        Jasmine-merged VCF file (vcf or vcf.gz).
+  - src_vcfs:
+      type: file[]
+      description: |
+        Array of source VCF/VCF.GZ files from callers used to create the Jasmine VCF.
+
+output:
+  - meta:
+      type: map
+      description: Groovy map unchanged
+  - vcf:
+      type: file
+      description: Jasmine VCF with missing header lines added (bgzipped and indexed).
+
+authors:
+  - github.com/manascripts

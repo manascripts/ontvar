@@ -1,0 +1,32 @@
+name: rename_vcf_headers
+description: |
+  Renames VCF headers to include the correct sample names for downstream compatibility.
+keywords:
+  - vcf
+  - structural variants
+  - header
+  - rename
+  - sample
+
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample metadata, must include 'sample' key.
+  - vcf:
+      type: file
+      description: |
+        Input VCF file to be processed.
+
+output:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample metadata, unchanged from input.
+  - renamed_vcf:
+      type: file
+      description: |
+        VCF file with updated headers, named as <sample_id>_renamed.vcf.
+
+authors:
+  - github.com/manascripts

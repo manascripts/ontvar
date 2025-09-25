@@ -1,0 +1,32 @@
+name: rename_vcf
+description: |
+  Renames or symlinks the VCF file to a unique, sample-specific filename for downstream compatibility.
+  The output VCF will be named as <sample_id>_suffix.vcf.
+keywords:
+  - vcf
+  - symlink
+  - rename
+  - structural-variation
+  - preprocessing
+
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample metadata, must include 'id' key.
+  - severus_vcf:
+      type: file
+      description: |
+        The original VCF file to be renamed or symlinked.
+
+output:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample metadata, with 'id' key suffixed by '_suffix'.
+  - vcf:
+      type: file
+      description: |
+        The symlinked or renamed VCF file, named as <sample_id>_suffix.vcf.
+authors:
+  - github.com/manascripts

@@ -1,0 +1,37 @@
+name: summarize_sv_counts
+description: |
+  Summarizes structural variant VCFs by counting SV types per sample and outputs a TSV summary table.
+keywords:
+  - vcf
+  - structural variants
+  - summary
+  - sv
+  - count
+tools:
+  - coreutils
+  - grep
+  - awk
+  - gzip
+
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample metadata, must include 'id' key.
+  - vcf:
+      type: file
+      description: |
+        Structural variant VCF file (can be .vcf or .vcf.gz).
+
+output:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample metadata, unchanged from input.
+  - sv_summary:
+      type: file
+      description: |
+        TSV file summarizing SV type counts for the sample, named as <sample_id>_sv_summary.tsv.
+
+authors:
+  - github.com/manascripts

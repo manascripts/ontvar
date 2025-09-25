@@ -1,0 +1,7 @@
+name: filter_chr
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - htslib   # for bgzip and zcat
+  - awk

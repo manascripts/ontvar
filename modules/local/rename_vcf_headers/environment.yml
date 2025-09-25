@@ -1,0 +1,6 @@
+name: rename_vcf_headers
+channels:
+  - defaults
+dependencies:
+  - coreutils
+  - htslib

@@ -44,6 +44,12 @@ workflow NFCORE_ONTVAR {
 
     take:
     samplesheet // channel: samplesheet read in from --input
+<<<<<<< Updated upstream
+=======
+    outdir
+    reference
+    annotsv_annotations
+>>>>>>> Stashed changes
 
     main:
 
@@ -51,10 +57,21 @@ workflow NFCORE_ONTVAR {
     // WORKFLOW: Run pipeline
     //
     ONTVAR (
+<<<<<<< Updated upstream
         samplesheet
     )
     emit:
     multiqc_report = ONTVAR.out.multiqc_report // channel: /path/to/multiqc_report.html
+=======
+        samplesheet,
+        outdir,
+        reference,
+        annotsv_annotations
+    )
+    emit:
+    multiqc_report = ONTVAR.out.multiqc_report // channel: /path/to/multiqc_report.html
+    versions              = ONTVAR.out.versions
+>>>>>>> Stashed changes
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,7 +98,14 @@ workflow {
     // WORKFLOW: Run main workflow
     //
     NFCORE_ONTVAR (
+<<<<<<< Updated upstream
         PIPELINE_INITIALISATION.out.samplesheet
+=======
+        PIPELINE_INITIALISATION.out.samplesheet,
+        params.outdir,
+        params.reference,
+        params.annotsv_annotations ?: null
+>>>>>>> Stashed changes
     )
     //
     // SUBWORKFLOW: Run completion tasks

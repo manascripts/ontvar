@@ -1,0 +1,31 @@
+name: filter_chr
+description: |
+  Filters a VCF or VCF.GZ file to retain only entries for chromosomes chr1-22, chrX, chrY, and chrM.
+  The output is a gzipped VCF containing only these chromosomes.
+keywords:
+  - vcf
+  - filter
+  - chromosomes
+  - preprocessing
+
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample metadata, must include 'sample' key.
+  - vcf:
+      type: file
+      description: |
+        The input VCF or VCF.GZ file to be filtered.
+
+output:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample metadata, unchanged from input.
+  - vcf:
+      type: file
+      description: |
+        The gzipped VCF file containing only chr1-22, chrX, chrY, and chrM entries.
+authors:
+  - github.com/manascripts

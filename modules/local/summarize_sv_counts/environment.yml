@@ -1,0 +1,5 @@
+name: summarize_sv_counts
+channels:
+  - defaults
+dependencies:
+  - coreutils

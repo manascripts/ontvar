@@ -8,6 +8,36 @@ include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_ontvar_pipeline'
+<<<<<<< Updated upstream
+=======
+include { SNIFFLES } from '../modules/nf-core/sniffles/main'
+include { CUTESV   } from '../modules/nf-core/cutesv/main'
+include { SEVERUS as SEVERUS_WITH_CONTROL } from '../modules/nf-core/severus/main'
+include { SEVERUS as SEVERUS_NO_CONTROL   } from '../modules/nf-core/severus/main'
+include { RENAME_VCF } from '../modules/local/rename_vcf/main'
+include { RENAME_VCF_HEADERS as RENAME_VCF_HEADERS_SNIFFLES } from '../modules/local/rename_vcf_headers/main'
+include { RENAME_VCF_HEADERS as RENAME_VCF_HEADERS_CUTESV   } from '../modules/local/rename_vcf_headers/main'
+include { RENAME_VCF_HEADERS as RENAME_VCF_HEADERS_SEVERUS  } from '../modules/local/rename_vcf_headers/main'
+include { JASMINESV as JASMINESV_SAMPLE } from '../modules/nf-core/jasminesv/main'
+include { JASMINE_HEADER_FIX } from '../modules/local/jasmine_header_fix/main'
+include { JASMINESV as JASMINESV_COHORT } from '../modules/nf-core/jasminesv/main'
+include { FILTER_CHR } from '../modules/local/filter_chr/main'
+include { ANNOTSV_ANNOTSV as ANNOTSV_COHORT    } from '../modules/nf-core/annotsv/annotsv/main'
+include { ANNOTSV_ANNOTSV as ANNOTSV_PER_SAMPLE_RAW    } from '../modules/nf-core/annotsv/annotsv/main' 
+include { ANNOTSV_ANNOTSV as ANNOTSV_PER_SAMPLE    } from '../modules/nf-core/annotsv/annotsv/main' 
+include { ANNOTSV_INSTALLANNOTATIONS } from '../modules/nf-core/annotsv/installannotations/main'
+include { UNTAR as UNTAR_ANNOTSV } from '../modules/nf-core/untar/main'
+include { SUMMARIZE_SV_COUNTS as SUMMARIZE_CALLERS          } from '../modules/local/summarize_sv_counts/main'
+include { SUMMARIZE_SV_COUNTS as SUMMARIZE_CALLER_MERGED    } from '../modules/local/summarize_sv_counts/main'
+include { SUMMARIZE_SV_COUNTS as SUMMARIZE_CALLER_MERGED_FILTERED  } from '../modules/local/summarize_sv_counts/main'
+include { SUMMARIZE_SV_COUNTS as SUMMARIZE_COHORT    } from '../modules/local/summarize_sv_counts/main'
+include { SVDB_QUERY as SVDB_QUERY_SAMPLE } from '../modules/nf-core/svdb/query/main'
+include { SVDB_QUERY as SVDB_QUERY_COHORT } from '../modules/nf-core/svdb/query/main'
+include { BCFTOOLS_VIEW as CALLER_SUPPORT_FILTER } from '../modules/nf-core/bcftools/view/main'
+include { BCFTOOLS_VIEW as AF_FILTER } from '../modules/nf-core/bcftools/view/main'
+include { BCFTOOLS_VIEW as AF_FILTER_COHORT } from '../modules/nf-core/bcftools/view/main'
+include { BCFTOOLS_SORT as BCFTOOLS_SORT_SAMPLE } from '../modules/nf-core/bcftools/sort/main'
+>>>>>>> Stashed changes
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -18,15 +48,430 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_ontv
 workflow ONTVAR {
 
     take:
+<<<<<<< Updated upstream
     ch_samplesheet // channel: samplesheet read in from --input
+=======
+        ch_samplesheet // channel: samplesheet read in from --input
+        ch_output_dir // channel: output directory from --outdir
+        reference
+        annotsv_annotations
+
+>>>>>>> Stashed changes
     main:
 
     ch_versions = Channel.empty()
     ch_multiqc_files = Channel.empty()
 
+<<<<<<< Updated upstream
     //
     // Collate and save software versions
     //
+=======
+    ch_sample_info = ch_samplesheet
+
+    cases = ch_sample_info
+        .filter { it[2] == 'case' }
+    controls = ch_sample_info
+        .filter { it[2] == 'control' }
+    controls_by_match = controls
+        .map { c -> tuple(c[3], c[1]) }
+
+    sv_input = cases
+        .map { c -> tuple(c[3], c[0], c[1]) }  // map to [match_id, sample_id, bam_path]
+        .join(controls_by_match, remainder: true)  // join on match_id
+        .map { it -> 
+            def sample_id = it[1] 
+            def case_bam = it[2]
+            def control_bam = it[3]  // control_bam comes from join
+            tuple(sample_id, case_bam, control_bam ?: null)
+        }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // SV Calling
+    // ──────────────────────────────────────────────────────────────────────
+
+    // SNIFFLES
+    sniffles_input = sv_input
+        .map { it ->
+            def sample_id = it[0]
+            tuple([id: "${sample_id}_sniffles", sample: sample_id], it[1], file("${it[1]}.bai"))
+        }
+
+    SNIFFLES(
+        sniffles_input,                                                         // Input 1: [meta, bam, bai]
+        Channel.value(tuple([id: "reference"], file(reference))),               // Input 2: [meta, fasta]
+        Channel.value(tuple([id: "tandem"], file(params.tandem_repeats))),      // Input 3: [meta, tandem_file]
+        Channel.value(true),                                                    // Input 4: vcf_output
+        Channel.value(false)                                                    // Input 5: snf_output
+    )
+    
+    // CUTESV
+    cutesv_input = sv_input
+        .map { it ->
+            def sample_id = it[0]
+            tuple([id: "${sample_id}_cutesv", sample: sample_id], it[1], file("${it[1]}.bai"))
+        }
+    
+    CUTESV(
+        cutesv_input,
+        Channel.value(tuple([id: "reference"], file(reference)))
+    )
+
+    // SEVERUS
+    severus_with_control_input = sv_input.filter { it[2] }
+        .map { it ->
+            def sample_id = it[0]
+            def case_bam = it[1]
+            def control_bam = it[2]
+            tuple([id: sample_id, sample: sample_id, has_control: true, control_bam: control_bam], case_bam, file("${case_bam}.bai"), control_bam, file("${control_bam}.bai"), [])
+        }
+    
+    severus_no_control_input = sv_input.filter { !it[2] }
+        .map { it ->
+            def sample_id = it[0]
+            def case_bam = it[1]
+            tuple([id: sample_id, sample: sample_id, has_control: false], case_bam, file("${case_bam}.bai"), [], [], [])
+        }
+    
+    SEVERUS_WITH_CONTROL(
+        severus_with_control_input,                                             // Input 1: [meta, target_bam, target_bai, control_bam, control_bai, vcf]
+        Channel.value(tuple([id: "vntr"], file(params.vntr_bed)))               // Input 2: [meta, vntr_bed]
+    )
+    
+    SEVERUS_NO_CONTROL(
+        severus_no_control_input,                                               // Input 1: [meta, target_bam, target_bai, control_bam, control_bai, vcf]
+        Channel.value(tuple([id: "vntr"], file(params.vntr_bed)))               // Input 2: [meta, vntr_bed]
+    )
+
+    severus_vcfs = SEVERUS_WITH_CONTROL.out.somatic_vcf
+        .mix(SEVERUS_NO_CONTROL.out.somatic_vcf)
+        .map { meta, vcf -> 
+            tuple(meta, vcf, 'severus') 
+        } | RENAME_VCF
+
+    // ──────────────────────────────────────────────────────────────────────
+    // FIX SAMPLE NAMES in VCF HEADERS
+    // ──────────────────────────────────────────────────────────────────────
+
+    sniffles_renamed_vcfs = SNIFFLES.out.vcf
+        .map { meta, vcf -> tuple(meta, vcf) } | RENAME_VCF_HEADERS_SNIFFLES
+
+    cutesv_renamed_vcfs = CUTESV.out.vcf
+        .map { meta, vcf -> tuple(meta, vcf) } | RENAME_VCF_HEADERS_CUTESV
+
+    severus_renamed_vcfs = severus_vcfs
+        .map { meta, vcf -> tuple(meta, vcf) } | RENAME_VCF_HEADERS_SEVERUS
+
+    all_caller_vcfs = sniffles_renamed_vcfs.mix(cutesv_renamed_vcfs, severus_renamed_vcfs)
+        .map { meta, vcf -> tuple(meta, vcf) }
+
+    // Raw caller summaries (multi-caller summary for 01-raw-calls directory)
+    SUMMARIZE_CALLERS(
+        all_caller_vcfs
+            .collect { meta, vcf -> vcf }
+            .map { vcf_list -> tuple([id: "01_raw_calls"], vcf_list) },
+        Channel.value("01_raw_calls")
+    )
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Gather SV caller outputs per sample
+    // ──────────────────────────────────────────────────────────────────────
+
+    sv_calls_by_sample = all_caller_vcfs
+        .map { meta, vcf -> 
+            def sample_name = meta.containsKey('sample') ? meta.sample : meta.id.replaceAll('_(sniffles|cutesv|severus)$', '')
+            tuple(sample_name, vcf)
+        }
+        .groupTuple(by: 0)
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Run Jasmine to merge SVs from callers per sample  
+    // ──────────────────────────────────────────────────────────────────────
+
+    jasminesv_sample_input = sv_calls_by_sample
+        .filter { meta, vcf_list -> vcf_list.size() > 0 }
+        .map { meta, vcf_list -> 
+            def sample_id = meta
+            tuple([id: "${sample_id}_jasmine", sample: sample_id], vcf_list, [], [])
+        }
+
+    // Prepare Jasmine input channels (per-sample)
+    ch_jasmine_sample_reference = Channel.value(tuple([id: "reference"], params.reference ? file(reference) : []))
+    ch_jasmine_sample_fai       = Channel.value(tuple([id: "fai"], params.reference ? file("${reference}.fai") : []))
+    ch_jasmine_sample_chr_norm  = Channel.value([]) // No chr norm file
+
+    JASMINESV_SAMPLE(
+        jasminesv_sample_input,
+        ch_jasmine_sample_reference,
+        ch_jasmine_sample_fai,
+        ch_jasmine_sample_chr_norm
+    )
+
+    jasminesv_sample_sources = jasminesv_sample_input
+        .map { meta, vcf_list, bams, sample_dists -> tuple(meta.sample ?: meta.id, vcf_list) }
+
+    jasminesv_sample_out_keyed = JASMINESV_SAMPLE.out.vcf
+        .map { meta, vcf -> tuple(meta.sample ?: meta.id, tuple(meta, vcf)) }
+
+    jasminesv_sample_out_keyed
+        .join(jasminesv_sample_sources)
+        .map { sample, leftVal, src_vcfs ->
+            def (meta, vcf) = leftVal
+            tuple(meta, vcf, src_vcfs)
+        } | JASMINE_HEADER_FIX
+
+    ch_jasmine_sample_vcfs = JASMINE_HEADER_FIX.out.vcf
+    .map { meta, vcf -> tuple(meta, vcf) }
+
+    sample_filtered = ch_jasmine_sample_vcfs | FILTER_CHR
+
+    sample_filtered | BCFTOOLS_SORT_SAMPLE
+    sample_sorted = BCFTOOLS_SORT_SAMPLE.out.vcf
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Filter SVs supported by ≥2 callers
+    // ──────────────────────────────────────────────────────────────────────
+
+    bcftools_sample_input = sample_sorted
+        .map { meta, vcf ->
+            def v = vcf.toString()
+            def updated_meta = meta + [sample: meta.sample ?: meta.id?.replaceAll('_jasmine.*', '')]
+            def idx = file(v + '.csi')
+            if( !idx.exists() ) idx = file(v + '.tbi')
+            def idx_out = idx.exists() ? idx : []
+            tuple(updated_meta, file(v), idx_out)
+        }
+    
+    CALLER_SUPPORT_FILTER(
+        bcftools_sample_input,
+        Channel.value([]), // regions
+        Channel.value([]), // targets
+        Channel.value([])  // samples
+    )
+
+    SUMMARIZE_CALLER_MERGED(
+        CALLER_SUPPORT_FILTER.out.vcf
+            .first()
+            .map { meta, vcf -> tuple([id: "02_caller_merged"], vcf) },
+        Channel.value("02_caller_merged")
+    )
+
+    // ──────────────────────────────────────────────────────────────────────
+    // SAMPLE LEVEL AF ANNOTATION + FILTERING + ANNOTSV ANNOTATION
+    // ──────────────────────────────────────────────────────────────────────
+    
+    ch_per_sample_input = CALLER_SUPPORT_FILTER.out.vcf
+        .map { meta, vcf -> tuple(meta, vcf) }
+
+    ch_svdb_in_occ  = Channel.value(params.svdb_in_occ ?: [])
+    ch_svdb_in_frq  = Channel.value(params.svdb_in_frq ?: [])
+    ch_svdb_out_occ = Channel.value(params.svdb_out_occ ?: [])
+    ch_svdb_out_frq = Channel.value(params.svdb_out_frq ?: [])
+    ch_svdb_dbs     = Channel.value(params.svdb_databases ? params.svdb_databases.collect { file(it) } : [])
+    ch_svdb_bedpe   = Channel.value([])
+
+    SVDB_QUERY_SAMPLE(
+        ch_per_sample_input,
+        ch_svdb_in_occ,
+        ch_svdb_in_frq,
+        ch_svdb_out_occ,
+        ch_svdb_out_frq,
+        ch_svdb_dbs,
+        ch_svdb_bedpe
+    )
+
+    ch_per_sample_bcftools_input = SVDB_QUERY_SAMPLE.out.vcf
+        .map { meta, annotated_vcf ->
+            def idx = file(annotated_vcf.toString() + '.csi')
+            if( !idx.exists() ) idx = file(annotated_vcf.toString() + '.tbi')
+            def idx_out = idx.exists() ? idx : []
+            tuple(meta, file(annotated_vcf), idx_out)
+        }
+    
+    ch_bcftools_regions = Channel.value([])
+    ch_bcftools_targets = Channel.value([])
+    ch_bcftools_samples = Channel.value([])
+
+    AF_FILTER(
+        ch_per_sample_bcftools_input,
+        ch_bcftools_regions,
+        ch_bcftools_targets,
+        ch_bcftools_samples
+    )
+
+    // Filtered merged summary
+    SUMMARIZE_CALLER_MERGED_FILTERED(
+        AF_FILTER.out.vcf
+            .first()
+            .map { meta, vcf -> tuple([id: "03_caller_merged_filtered"], vcf) },
+        Channel.value("03_caller_merged_filtered")
+    )
+
+    // ──────────────────────────────────────────────────────────────────────
+    // prepare channel for AnnotSV annotations
+    // ──────────────────────────────────────────────────────────────────────
+
+    if(!annotsv_annotations) {
+        ANNOTSV_INSTALLANNOTATIONS()
+        ANNOTSV_INSTALLANNOTATIONS.out.annotations
+            .map { [[id:"annotsv"], it] }
+            .collect()
+            .set { ch_annotsv_annotations }
+    } else {
+        ch_annotsv_annotations_input = Channel.fromPath(annotsv_annotations).map{[[id:"annotsv_annotations"], it]}.collect()
+        if(annotsv_annotations.endsWith(".tar.gz")){
+            UNTAR_ANNOTSV(ch_annotsv_annotations_input)
+            UNTAR_ANNOTSV.out.untar
+                .collect()
+                .set { ch_annotsv_annotations }
+        } else {
+            ch_annotsv_annotations = Channel.fromPath(annotsv_annotations).map{[[id:"annotsv_annotations"], it]}.collect()
+        }
+    }
+
+    ch_candidate_genes      = Channel.value(tuple([id: "candidate_genes"], []))
+    ch_false_positive_snv   = Channel.value(tuple([id: "false_positive_snv"], []))
+    ch_gene_transcripts     = Channel.value(tuple([id: "gene_transcripts"], []))
+
+    ANNOTSV_PER_SAMPLE_RAW(
+        SVDB_QUERY_SAMPLE.out.vcf
+            .map { meta, vcf -> tuple(meta, vcf, [], []) },
+        ch_annotsv_annotations,
+        ch_candidate_genes,
+        ch_false_positive_snv,
+        ch_gene_transcripts
+    )
+
+    ANNOTSV_PER_SAMPLE(
+        AF_FILTER.out.vcf
+            .map { meta, vcf -> 
+            meta.id = meta.id + "_annotated"
+            tuple(meta, vcf, [], []) },
+        ch_annotsv_annotations,
+        ch_candidate_genes,
+        ch_false_positive_snv,
+        ch_gene_transcripts
+    )
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Continue to cohort-level analyses
+    // ──────────────────────────────────────────────────────────────────────
+
+    sample_consensus_vcfs = CALLER_SUPPORT_FILTER.out.vcf
+        .map { meta, vcf -> vcf }
+        .collect()
+
+    jasminesv_cohort_input = sample_consensus_vcfs
+        .map { vcf_list -> 
+        tuple([id: "cohort"], vcf_list, [], [])
+    }
+
+    ch_jasmine_cohort_reference = Channel.value(tuple([id: "reference"], params.reference ? file(reference) : []))
+    ch_jasmine_cohort_fai       = Channel.value(tuple([id: "fai"], params.reference ? file("${reference}.fai") : []))
+    ch_jasmine_cohort_chr_norm  = Channel.value([]) // No chr norm file
+
+    JASMINESV_COHORT(
+        jasminesv_cohort_input,
+        ch_jasmine_cohort_reference,
+        ch_jasmine_cohort_fai,
+        ch_jasmine_cohort_chr_norm
+    )
+
+    // ──────────────────────────────────────────────────────────────────────
+    // SV annotation using SVDB (cohort-level)
+    // ──────────────────────────────────────────────────────────────────────
+
+    svdb_cohort_input = JASMINESV_COHORT.out.vcf
+        .map { meta, cohort_vcf ->
+        tuple(meta, cohort_vcf)
+    }
+
+    ch_svdb_cohort_in_occ  = Channel.value(params.svdb_in_occ ?: [])
+    ch_svdb_cohort_in_frq  = Channel.value(params.svdb_in_frq ?: [])
+    ch_svdb_cohort_out_occ = Channel.value(params.svdb_out_occ ?: [])
+    ch_svdb_cohort_out_frq = Channel.value(params.svdb_out_frq ?: [])
+    ch_svdb_cohort_dbs     = Channel.value(params.svdb_databases ? params.svdb_databases.collect { file(it) } : [])
+    ch_svdb_cohort_bedpe   = Channel.value([])
+
+    SVDB_QUERY_COHORT(
+        svdb_cohort_input,
+        ch_svdb_cohort_in_occ,
+        ch_svdb_cohort_in_frq,
+        ch_svdb_cohort_out_occ,
+        ch_svdb_cohort_out_frq,
+        ch_svdb_cohort_dbs,
+        ch_svdb_cohort_bedpe
+    )
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Filter annotated SVs based on AF
+    // ──────────────────────────────────────────────────────────────────────
+
+    bcftools_cohort_input = SVDB_QUERY_COHORT.out.vcf.map { meta, annotated_vcf ->
+        tuple(meta, annotated_vcf, [])
+    }
+
+    AF_FILTER_COHORT(
+        bcftools_cohort_input,
+        ch_bcftools_regions,
+        ch_bcftools_targets,
+        ch_bcftools_samples
+    )
+
+    // Cohort summaries - one per cohort directory
+    SUMMARIZE_COHORT(
+        AF_FILTER_COHORT.out.vcf
+        .map { meta, vcf -> tuple(meta, vcf) },
+        Channel.value("cohort")
+    )
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Structural variant annotation using AnnotSV
+    // ──────────────────────────────────────────────────────────────────────
+
+    annotsv_input = AF_FILTER_COHORT.out.vcf.map { meta, filtered_vcf ->
+        meta.id = 'cohort_annotated'
+        tuple(meta, filtered_vcf, [], [])
+    }
+
+    ch_candidate_genes_cohort    = Channel.value(tuple([id: "candidate_genes"], []))
+    ch_false_positive_snv_cohort = Channel.value(tuple([id: "false_positive_snv"], []))
+    ch_gene_transcripts_cohort   = Channel.value(tuple([id: "gene_transcripts"], []))
+
+    ANNOTSV_COHORT(
+        annotsv_input,
+        ch_annotsv_annotations,
+        ch_candidate_genes_cohort,
+        ch_false_positive_snv_cohort,
+        ch_gene_transcripts_cohort
+    )
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Collate and save software versions
+    // ──────────────────────────────────────────────────────────────────────
+    
+    ch_versions = ch_versions.mix(SNIFFLES.out.versions)
+    ch_versions = ch_versions.mix(CUTESV.out.versions)
+    ch_versions = ch_versions.mix(SEVERUS_WITH_CONTROL.out.versions)
+    ch_versions = ch_versions.mix(SEVERUS_NO_CONTROL.out.versions)
+    ch_versions = ch_versions.mix(JASMINESV_SAMPLE.out.versions)
+    ch_versions = ch_versions.mix(JASMINESV_COHORT.out.versions)
+    ch_versions = ch_versions.mix(BCFTOOLS_SORT_SAMPLE.out.versions)
+    ch_versions = ch_versions.mix(SVDB_QUERY_SAMPLE.out.versions)
+    ch_versions = ch_versions.mix(SVDB_QUERY_COHORT.out.versions)
+    ch_versions = ch_versions.mix(CALLER_SUPPORT_FILTER.out.versions)
+    ch_versions = ch_versions.mix(AF_FILTER.out.versions)
+    ch_versions = ch_versions.mix(AF_FILTER_COHORT.out.versions)
+    ch_versions = ch_versions.mix(ANNOTSV_PER_SAMPLE_RAW.out.versions)
+    ch_versions = ch_versions.mix(ANNOTSV_PER_SAMPLE.out.versions)
+    ch_versions = ch_versions.mix(ANNOTSV_COHORT.out.versions)
+
+    // Handle conditional AnnotSV installation versions
+    if(!annotsv_annotations) {
+        ch_versions = ch_versions.mix(ANNOTSV_INSTALLANNOTATIONS.out.versions)
+    }
+
+>>>>>>> Stashed changes
     softwareVersionsToYAML(ch_versions)
         .collectFile(
             storeDir: "${params.outdir}/pipeline_info",
@@ -60,6 +505,7 @@ workflow ONTVAR {
         methodsDescriptionText(ch_multiqc_custom_methods_description))
 
     ch_multiqc_files = ch_multiqc_files.mix(ch_collated_versions)
+<<<<<<< Updated upstream
     ch_multiqc_files = ch_multiqc_files.mix(
         ch_methods_description.collectFile(
             name: 'methods_description_mqc.yaml',
@@ -79,6 +525,22 @@ workflow ONTVAR {
     emit:multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
     versions       = ch_versions                 // channel: [ path(versions.yml) ]
 
+=======
+    ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml', sort: true))
+
+    MULTIQC(
+        ch_multiqc_files.collect(),
+        ch_multiqc_config.toList(),
+        ch_multiqc_custom_config.toList(),
+        ch_multiqc_logo.toList(),
+        [],
+        []
+    )
+
+    emit:
+        multiqc_report         = MULTIQC.out.report.toList()
+        versions               = ch_versions
+>>>>>>> Stashed changes
 }
 
 /*
@@ -86,3 +548,4 @@ workflow ONTVAR {
     THE END
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+
