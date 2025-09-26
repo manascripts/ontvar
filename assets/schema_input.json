@@ -7,11 +7,21 @@
     "items": {
         "type": "object",
         "properties": {
+            "group_id": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "Group ID must be provided and cannot contain spaces",
+                "meta": ["id"]
+            },
             "sample_id": {
                 "type": "string",
                 "pattern": "^\\S+$",
-                "errorMessage": "Sample ID must be provided and cannot contain spaces",
-                "meta": ["id"]
+                "errorMessage": "Sample ID must be provided and cannot contain spaces"
+            },
+            "sample_type": {
+                "type": "string",
+                "enum": ["case", "control"],
+                "errorMessage": "Sample type must be either 'case' or 'control'"
             },
             "bam_path": {
                 "type": "string",
@@ -19,18 +29,8 @@
                 "exists": true,
                 "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.bam$",
                 "errorMessage": "BAM file path must be provided, cannot contain spaces and must have extension '.bam'"
-            },
-            "sample_type": {
-                "type": "string",
-                "enum": ["case", "control"],
-                "errorMessage": "Sample type must be either 'case' or 'control'"
-            },
-            "match_id": {
-                "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "Match ID must be provided and cannot contain spaces"
             }
         },
-        "required": ["sample_id", "bam_path", "sample_type", "match_id"]
+        "required": ["group_id", "sample_id", "sample_type", "bam_path"]
     }
 }

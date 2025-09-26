@@ -75,8 +75,9 @@ workflow PIPELINE_INITIALISATION {
     Channel
     .fromList(samplesheetToList(params.input, "${projectDir}/assets/schema_input.json"))
     .map {
-        meta, bam_path, sample_type, match_id ->
-            return [meta.id, bam_path, sample_type, match_id]
+        meta, sample_id, sample_type, bam_path ->
+            // Return: [group_id, sample_id, sample_type, bam_path]
+            return [meta.id, sample_id, sample_type, bam_path]
     }
     .set { ch_samplesheet }
 

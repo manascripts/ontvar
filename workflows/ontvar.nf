@@ -56,22 +56,24 @@ workflow ONTVAR {
     ch_multiqc_files = Channel.empty()
 
     ch_sample_info = ch_samplesheet
+    // ch_sample_info now contains: [group_id, sample_id, sample_type, bam_path]
+    //                               [   0   ,    1    ,     2     ,    3      ]
 
     cases = ch_sample_info
-        .filter { it[2] == 'case' }
+        .filter { it[2] == 'case' }      // sample_type is index 2
     controls = ch_sample_info
-        .filter { it[2] == 'control' }
+        .filter { it[2] == 'control' }   // sample_type is index 2
     controls_by_match = controls
-        .map { c -> tuple(c[3], c[1]) }
+        .map { c -> tuple(c[0], c[3]) }  // [group_id, bam_path]
 
     sv_input = cases
-        .map { c -> tuple(c[3], c[0], c[1]) }  // map to [match_id, sample_id, bam_path]
-        .join(controls_by_match, remainder: true)  // join on match_id
+        .map { c -> tuple(c[0], c[0], c[3]) }  // map to [group_id, group_id, bam_path] - using group_id as sample name
+        .join(controls_by_match, remainder: true)  // join on group_id
         .map { it -> 
-            def sample_id = it[1] 
+            def group_id = it[0]  // Use group_id as sample identifier
             def case_bam = it[2]
             def control_bam = it[3]  // control_bam comes from join
-            tuple(sample_id, case_bam, control_bam ?: null)
+            tuple(group_id, case_bam, control_bam ?: null)
         }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -81,8 +83,8 @@ workflow ONTVAR {
     // SNIFFLES
     sniffles_input = sv_input
         .map { it ->
-            def sample_id = it[0]
-            tuple([id: "${sample_id}_sniffles", sample: sample_id], it[1], file("${it[1]}.bai"))
+            def group_id = it[0]
+            tuple([id: "${group_id}_sniffles", sample: group_id], it[1], file("${it[1]}.bai"))
         }
 
     SNIFFLES(
@@ -96,8 +98,8 @@ workflow ONTVAR {
     // CUTESV
     cutesv_input = sv_input
         .map { it ->
-            def sample_id = it[0]
-            tuple([id: "${sample_id}_cutesv", sample: sample_id], it[1], file("${it[1]}.bai"))
+            def group_id = it[0]
+            tuple([id: "${group_id}_cutesv", sample: group_id], it[1], file("${it[1]}.bai"))
         }
     
     CUTESV(
@@ -108,17 +110,17 @@ workflow ONTVAR {
     // SEVERUS
     severus_with_control_input = sv_input.filter { it[2] }
         .map { it ->
-            def sample_id = it[0]
+            def group_id = it[0]
             def case_bam = it[1]
             def control_bam = it[2]
-            tuple([id: sample_id, sample: sample_id, has_control: true, control_bam: control_bam], case_bam, file("${case_bam}.bai"), control_bam, file("${control_bam}.bai"), [])
+            tuple([id: group_id, sample: group_id, has_control: true, control_bam: control_bam], case_bam, file("${case_bam}.bai"), control_bam, file("${control_bam}.bai"), [])
         }
     
     severus_no_control_input = sv_input.filter { !it[2] }
         .map { it ->
-            def sample_id = it[0]
+            def group_id = it[0]
             def case_bam = it[1]
-            tuple([id: sample_id, sample: sample_id, has_control: false], case_bam, file("${case_bam}.bai"), [], [], [])
+            tuple([id: group_id, sample: group_id, has_control: false], case_bam, file("${case_bam}.bai"), [], [], [])
         }
     
     SEVERUS_WITH_CONTROL(
