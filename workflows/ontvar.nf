@@ -34,7 +34,7 @@ include { SVDB_QUERY as SVDB_QUERY_COHORT } from '../modules/nf-core/svdb/query/
 include { BCFTOOLS_VIEW as CALLER_SUPPORT_FILTER } from '../modules/nf-core/bcftools/view/main'
 include { BCFTOOLS_VIEW as AF_FILTER } from '../modules/nf-core/bcftools/view/main'
 include { BCFTOOLS_VIEW as AF_FILTER_COHORT } from '../modules/nf-core/bcftools/view/main'
-include { BCFTOOLS_SORT as BCFTOOLS_SORT_SAMPLE } from '../modules/nf-core/bcftools/sort/main'
+include { BCFTOOLS_SORT as SORT_VCF } from '../modules/nf-core/bcftools/sort/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,7 +84,7 @@ workflow ONTVAR {
     sniffles_input = sv_input
         .map { it ->
             def group_id = it[0]
-            tuple([id: "${group_id}_sniffles", sample: group_id], it[1], file("${it[1]}.bai"))
+            tuple([id: "${group_id}", sample: group_id], it[1], file("${it[1]}.bai"))
         }
 
     SNIFFLES(
@@ -99,7 +99,7 @@ workflow ONTVAR {
     cutesv_input = sv_input
         .map { it ->
             def group_id = it[0]
-            tuple([id: "${group_id}_cutesv", sample: group_id], it[1], file("${it[1]}.bai"))
+            tuple([id: "${group_id}", sample: group_id], it[1], file("${it[1]}.bai"))
         }
     
     CUTESV(
@@ -159,8 +159,8 @@ workflow ONTVAR {
     SUMMARIZE_CALLERS(
         all_caller_vcfs
             .collect { meta, vcf -> vcf }
-            .map { vcf_list -> tuple([id: "01_raw_calls"], vcf_list) },
-        Channel.value("01_raw_calls")
+            .map { vcf_list -> tuple([id: "raw_caller_summary"], vcf_list) },
+        Channel.value("raw_calls")
     )
 
     // ──────────────────────────────────────────────────────────────────────
@@ -169,8 +169,8 @@ workflow ONTVAR {
 
     sv_calls_by_sample = all_caller_vcfs
         .map { meta, vcf -> 
-            def sample_name = meta.containsKey('sample') ? meta.sample : meta.id.replaceAll('_(sniffles|cutesv|severus)$', '')
-            tuple(sample_name, vcf)
+            def group_id = meta.sample ?: meta.id  // Use sample field first, fallback to id
+            tuple(group_id, vcf)
         }
         .groupTuple(by: 0)
 
@@ -181,8 +181,8 @@ workflow ONTVAR {
     jasminesv_sample_input = sv_calls_by_sample
         .filter { meta, vcf_list -> vcf_list.size() > 0 }
         .map { meta, vcf_list -> 
-            def sample_id = meta
-            tuple([id: "${sample_id}_jasmine", sample: sample_id], vcf_list, [], [])
+            def group_id = meta
+            tuple([id: group_id, sample: group_id, step: "consensus"], vcf_list, [], [])
         }
 
     // Prepare Jasmine input channels (per-sample)
@@ -215,22 +215,22 @@ workflow ONTVAR {
 
     sample_filtered = ch_jasmine_sample_vcfs | FILTER_CHR
 
-    sample_filtered | BCFTOOLS_SORT_SAMPLE
-    sample_sorted = BCFTOOLS_SORT_SAMPLE.out.vcf
+    sample_filtered | SORT_VCF
+    sample_sorted = SORT_VCF.out.vcf
 
     // ──────────────────────────────────────────────────────────────────────
     // Filter SVs supported by ≥2 callers
     // ──────────────────────────────────────────────────────────────────────
 
     bcftools_sample_input = sample_sorted
-        .map { meta, vcf ->
-            def v = vcf.toString()
-            def updated_meta = meta + [sample: meta.sample ?: meta.id?.replaceAll('_jasmine.*', '')]
-            def idx = file(v + '.csi')
-            if( !idx.exists() ) idx = file(v + '.tbi')
-            def idx_out = idx.exists() ? idx : []
-            tuple(updated_meta, file(v), idx_out)
-        }
+    .map { meta, vcf ->
+        def v = vcf.toString()
+        def updated_meta = [id: meta.sample ?: meta.id, sample: meta.sample ?: meta.id, step: "caller_support"]
+        def idx = file(v + '.csi')
+        if( !idx.exists() ) idx = file(v + '.tbi')
+        def idx_out = idx.exists() ? idx : []
+        tuple(updated_meta, file(v), idx_out)
+    }
     
     CALLER_SUPPORT_FILTER(
         bcftools_sample_input,
@@ -242,8 +242,8 @@ workflow ONTVAR {
     SUMMARIZE_CALLER_MERGED(
         CALLER_SUPPORT_FILTER.out.vcf
             .first()
-            .map { meta, vcf -> tuple([id: "02_caller_merged"], vcf) },
-        Channel.value("02_caller_merged")
+            .map { meta, vcf -> tuple([id: "consensus_summary"], vcf) },
+        Channel.value("consensus")
     )
 
     // ──────────────────────────────────────────────────────────────────────
@@ -271,12 +271,13 @@ workflow ONTVAR {
     )
 
     ch_per_sample_bcftools_input = SVDB_QUERY_SAMPLE.out.vcf
-        .map { meta, annotated_vcf ->
-            def idx = file(annotated_vcf.toString() + '.csi')
-            if( !idx.exists() ) idx = file(annotated_vcf.toString() + '.tbi')
-            def idx_out = idx.exists() ? idx : []
-            tuple(meta, file(annotated_vcf), idx_out)
-        }
+    .map { meta, annotated_vcf ->
+        def updated_meta = [id: meta.sample ?: meta.id, sample: meta.sample ?: meta.id, step: "af_filter"]
+        def idx = file(annotated_vcf.toString() + '.csi')
+        if( !idx.exists() ) idx = file(annotated_vcf.toString() + '.tbi')
+        def idx_out = idx.exists() ? idx : []
+        tuple(updated_meta, file(annotated_vcf), idx_out)
+    }
     
     ch_bcftools_regions = Channel.value([])
     ch_bcftools_targets = Channel.value([])
@@ -293,8 +294,8 @@ workflow ONTVAR {
     SUMMARIZE_CALLER_MERGED_FILTERED(
         AF_FILTER.out.vcf
             .first()
-            .map { meta, vcf -> tuple([id: "03_caller_merged_filtered"], vcf) },
-        Channel.value("03_caller_merged_filtered")
+            .map { meta, vcf -> tuple([id: "filtered_summary"], vcf) },
+        Channel.value("filtered")
     )
 
     // ──────────────────────────────────────────────────────────────────────
@@ -335,8 +336,9 @@ workflow ONTVAR {
     ANNOTSV_PER_SAMPLE(
         AF_FILTER.out.vcf
             .map { meta, vcf -> 
-            meta.id = meta.id + "_annotated"
-            tuple(meta, vcf, [], []) },
+                def updated_meta = [id: meta.sample ?: meta.id, sample: meta.sample ?: meta.id, step: "final_annotation"]
+                tuple(updated_meta, vcf, [], [])
+            },
         ch_annotsv_annotations,
         ch_candidate_genes,
         ch_false_positive_snv,
@@ -411,7 +413,7 @@ workflow ONTVAR {
     // Cohort summaries - one per cohort directory
     SUMMARIZE_COHORT(
         AF_FILTER_COHORT.out.vcf
-        .map { meta, vcf -> tuple(meta, vcf) },
+            .map { meta, vcf -> tuple([id: "cohort_summary"], vcf) },
         Channel.value("cohort")
     )
 
@@ -446,7 +448,7 @@ workflow ONTVAR {
     ch_versions = ch_versions.mix(SEVERUS_NO_CONTROL.out.versions)
     ch_versions = ch_versions.mix(JASMINESV_SAMPLE.out.versions)
     ch_versions = ch_versions.mix(JASMINESV_COHORT.out.versions)
-    ch_versions = ch_versions.mix(BCFTOOLS_SORT_SAMPLE.out.versions)
+    ch_versions = ch_versions.mix(SORT_VCF.out.versions)
     ch_versions = ch_versions.mix(SVDB_QUERY_SAMPLE.out.versions)
     ch_versions = ch_versions.mix(SVDB_QUERY_COHORT.out.versions)
     ch_versions = ch_versions.mix(CALLER_SUPPORT_FILTER.out.versions)

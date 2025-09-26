@@ -1,5 +1,5 @@
 process RENAME_VCF {
-    tag "${meta.id}_${suffix}"
+    tag "${meta.id}"
     label 'process_single'
 
     input:
