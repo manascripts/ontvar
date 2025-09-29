@@ -155,11 +155,14 @@ workflow ONTVAR {
     all_caller_vcfs = sniffles_renamed_vcfs.mix(cutesv_renamed_vcfs, severus_renamed_vcfs)
         .map { meta, vcf -> tuple(meta, vcf) }
 
-    // Raw caller summaries (multi-caller summary for 01-raw-calls directory)
+    // Raw caller summaries
+    all_caller_vcfs_for_summary = all_caller_vcfs
+        .map { meta, vcf -> vcf }
+        .collect()
+        .map { vcf_list -> tuple([id: "raw_caller_summary"], vcf_list) }
+
     SUMMARIZE_CALLERS(
-        all_caller_vcfs
-            .collect { meta, vcf -> vcf }
-            .map { vcf_list -> tuple([id: "raw_caller_summary"], vcf_list) },
+        all_caller_vcfs_for_summary,
         Channel.value("raw_calls")
     )
 
@@ -239,10 +242,14 @@ workflow ONTVAR {
         Channel.value([])  // samples
     )
 
+    // Consensus summary - simple approach
+    consensus_summary_input = CALLER_SUPPORT_FILTER.out.vcf
+        .map { meta, vcf -> vcf }
+        .collect()
+        .map { vcf_list -> tuple([id: "consensus_summary"], vcf_list) }
+
     SUMMARIZE_CALLER_MERGED(
-        CALLER_SUPPORT_FILTER.out.vcf
-            .first()
-            .map { meta, vcf -> tuple([id: "consensus_summary"], vcf) },
+        consensus_summary_input,
         Channel.value("consensus")
     )
 
@@ -290,11 +297,14 @@ workflow ONTVAR {
         ch_bcftools_samples
     )
 
-    // Filtered merged summary
+    // Filtered summary - simple approach
+    filtered_summary_input = AF_FILTER.out.vcf
+        .map { meta, vcf -> vcf }
+        .collect()
+        .map { vcf_list -> tuple([id: "filtered_summary"], vcf_list) }
+
     SUMMARIZE_CALLER_MERGED_FILTERED(
-        AF_FILTER.out.vcf
-            .first()
-            .map { meta, vcf -> tuple([id: "filtered_summary"], vcf) },
+        filtered_summary_input,
         Channel.value("filtered")
     )
 
