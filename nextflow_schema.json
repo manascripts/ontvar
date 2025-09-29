@@ -542,7 +542,7 @@
                     "description": "Output VCF format in addition to TSV (1=yes, 0=no).",
                     "fa_icon": "fas fa-file-code"
                 },
-                "min_sv_size": {
+                "annotsv_min_sv_size": {
                     "type": "integer",
                     "default": 0,
                     "minimum": 0,
