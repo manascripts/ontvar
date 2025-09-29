@@ -110,18 +110,11 @@
                     "description": "Path to VNTR BED file for Severus.",
                     "fa_icon": "fas fa-file-alt"
                 },
-                "pon_file": {
-                    "type": "string",
-                    "format": "file-path",
-                    "default": "${projectDir}/assets/pon/PoN_1000G_hg38_extended.tsv.gz",
-                    "description": "Panel of Normals file.",
-                    "fa_icon": "fas fa-database"
-                },
                 "PON": {
                     "type": "string",
                     "format": "file-path",
                     "default": "${projectDir}/assets/pon/PoN_1000G_hg38_extended.tsv.gz",
-                    "description": "Panel of Normals file (alias for pon_file).",
+                    "description": "Panel of Normals file for filtering.",
                     "fa_icon": "fas fa-database"
                 }
             }
