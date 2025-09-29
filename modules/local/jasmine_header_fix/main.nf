@@ -23,7 +23,7 @@ process JASMINE_HEADER_FIX {
 
     when:
       task.ext.when == null || task.ext.when
-        
+
     script:
     """
     set -euo pipefail
@@ -33,7 +33,7 @@ process JASMINE_HEADER_FIX {
     export TMP=\$PWD
     export TEMP=\$PWD
     export BCFTOOLS_PLUGINS=""
-    
+
     # Create a local temp directory
     mkdir -p \$PWD/tmp
     export TMPDIR=\$PWD/tmp

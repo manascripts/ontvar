@@ -134,7 +134,7 @@
             "properties": {
                 "svdb_databases": {
                     "type": "array",
-                    "items": {"type": "string"},
+                    "items": { "type": "string" },
                     "default": [
                         "${projectDir}/assets/svdb_databases/gnomad.v4.1.sv.sites.rmMissing.vcf.gz",
                         "${projectDir}/assets/svdb_databases/UWONT_450_AF.vcf.gz"
@@ -144,28 +144,28 @@
                 },
                 "svdb_in_frq": {
                     "type": "array",
-                    "items": {"type": "string"},
+                    "items": { "type": "string" },
                     "default": ["AF", "PFneedLR"],
                     "description": "The frequency count tags in the database INFO columns.",
                     "fa_icon": "fas fa-tags"
                 },
                 "svdb_out_frq": {
                     "type": "array",
-                    "items": {"type": "string"},
+                    "items": { "type": "string" },
                     "default": ["AFgnomAD", "AFneedLR"],
                     "description": "The frequency count tags to be included in the output.",
                     "fa_icon": "fas fa-tags"
                 },
                 "svdb_in_occ": {
                     "type": "array",
-                    "items": {"type": "string"},
+                    "items": { "type": "string" },
                     "default": ["AN", "AN"],
                     "description": "The allele count tags in the database INFO columns.",
                     "fa_icon": "fas fa-tags"
                 },
                 "svdb_out_occ": {
                     "type": "array",
-                    "items": {"type": "string"},
+                    "items": { "type": "string" },
                     "default": ["ANgnomAD", "ANneedLR"],
                     "description": "The allele count tags to be included in the output.",
                     "fa_icon": "fas fa-tags"
@@ -530,7 +530,7 @@
                 },
                 "false_positive_snv": {
                     "type": ["string", "null"],
-                    "format": "file-path", 
+                    "format": "file-path",
                     "default": null,
                     "description": "Path to false positive SNV file for AnnotSV.",
                     "fa_icon": "fas fa-file-alt"

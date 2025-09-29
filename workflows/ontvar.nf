@@ -21,8 +21,8 @@ include { JASMINE_HEADER_FIX } from '../modules/local/jasmine_header_fix/main'
 include { JASMINESV as JASMINESV_COHORT } from '../modules/nf-core/jasminesv/main'
 include { FILTER_CHR } from '../modules/local/filter_chr/main'
 include { ANNOTSV_ANNOTSV as ANNOTSV_COHORT    } from '../modules/nf-core/annotsv/annotsv/main'
-include { ANNOTSV_ANNOTSV as ANNOTSV_PER_SAMPLE_RAW    } from '../modules/nf-core/annotsv/annotsv/main' 
-include { ANNOTSV_ANNOTSV as ANNOTSV_PER_SAMPLE    } from '../modules/nf-core/annotsv/annotsv/main' 
+include { ANNOTSV_ANNOTSV as ANNOTSV_PER_SAMPLE_RAW    } from '../modules/nf-core/annotsv/annotsv/main'
+include { ANNOTSV_ANNOTSV as ANNOTSV_PER_SAMPLE    } from '../modules/nf-core/annotsv/annotsv/main'
 include { ANNOTSV_INSTALLANNOTATIONS } from '../modules/nf-core/annotsv/installannotations/main'
 include { UNTAR as UNTAR_ANNOTSV } from '../modules/nf-core/untar/main'
 include { SUMMARIZE_SV_COUNTS as SUMMARIZE_CALLERS          } from '../modules/local/summarize_sv_counts/main'
@@ -69,7 +69,7 @@ workflow ONTVAR {
     sv_input = cases
         .map { c -> tuple(c[0], c[0], c[3]) }  // map to [group_id, group_id, bam_path] - using group_id as sample name
         .join(controls_by_match, remainder: true)  // join on group_id
-        .map { it -> 
+        .map { it ->
             def group_id = it[0]  // Use group_id as sample identifier
             def case_bam = it[2]
             def control_bam = it[3]  // control_bam comes from join
@@ -94,14 +94,14 @@ workflow ONTVAR {
         Channel.value(true),                                                    // Input 4: vcf_output
         Channel.value(false)                                                    // Input 5: snf_output
     )
-    
+
     // CUTESV
     cutesv_input = sv_input
         .map { it ->
             def group_id = it[0]
             tuple([id: "${group_id}", sample: group_id], it[1], file("${it[1]}.bai"))
         }
-    
+
     CUTESV(
         cutesv_input,
         Channel.value(tuple([id: "reference"], file(reference)))
@@ -115,19 +115,19 @@ workflow ONTVAR {
             def control_bam = it[2]
             tuple([id: group_id, sample: group_id, has_control: true, control_bam: control_bam], case_bam, file("${case_bam}.bai"), control_bam, file("${control_bam}.bai"), [])
         }
-    
+
     severus_no_control_input = sv_input.filter { !it[2] }
         .map { it ->
             def group_id = it[0]
             def case_bam = it[1]
             tuple([id: group_id, sample: group_id, has_control: false], case_bam, file("${case_bam}.bai"), [], [], [])
         }
-    
+
     SEVERUS_WITH_CONTROL(
         severus_with_control_input,                                             // Input 1: [meta, target_bam, target_bai, control_bam, control_bai, vcf]
         Channel.value(tuple([id: "vntr"], file(params.vntr_bed)))               // Input 2: [meta, vntr_bed]
     )
-    
+
     SEVERUS_NO_CONTROL(
         severus_no_control_input,                                               // Input 1: [meta, target_bam, target_bai, control_bam, control_bai, vcf]
         Channel.value(tuple([id: "vntr"], file(params.vntr_bed)))               // Input 2: [meta, vntr_bed]
@@ -135,8 +135,8 @@ workflow ONTVAR {
 
     severus_vcfs = SEVERUS_WITH_CONTROL.out.somatic_vcf
         .mix(SEVERUS_NO_CONTROL.out.somatic_vcf)
-        .map { meta, vcf -> 
-            tuple(meta, vcf, 'severus') 
+        .map { meta, vcf ->
+            tuple(meta, vcf, 'severus')
         } | RENAME_VCF
 
     // ──────────────────────────────────────────────────────────────────────
@@ -171,19 +171,19 @@ workflow ONTVAR {
     // ──────────────────────────────────────────────────────────────────────
 
     sv_calls_by_sample = all_caller_vcfs
-        .map { meta, vcf -> 
+        .map { meta, vcf ->
             def group_id = meta.sample ?: meta.id  // Use sample field first, fallback to id
             tuple(group_id, vcf)
         }
         .groupTuple(by: 0)
 
     // ──────────────────────────────────────────────────────────────────────
-    // Run Jasmine to merge SVs from callers per sample  
+    // Run Jasmine to merge SVs from callers per sample
     // ──────────────────────────────────────────────────────────────────────
 
     jasminesv_sample_input = sv_calls_by_sample
         .filter { meta, vcf_list -> vcf_list.size() > 0 }
-        .map { meta, vcf_list -> 
+        .map { meta, vcf_list ->
             def group_id = meta
             tuple([id: group_id, sample: group_id, step: "consensus"], vcf_list, [], [])
         }
@@ -234,7 +234,7 @@ workflow ONTVAR {
         def idx_out = idx.exists() ? idx : []
         tuple(updated_meta, file(v), idx_out)
     }
-    
+
     CALLER_SUPPORT_FILTER(
         bcftools_sample_input,
         Channel.value([]), // regions
@@ -256,7 +256,7 @@ workflow ONTVAR {
     // ──────────────────────────────────────────────────────────────────────
     // SAMPLE LEVEL AF ANNOTATION + FILTERING + ANNOTSV ANNOTATION
     // ──────────────────────────────────────────────────────────────────────
-    
+
     ch_per_sample_input = CALLER_SUPPORT_FILTER.out.vcf
         .map { meta, vcf -> tuple(meta, vcf) }
 
@@ -285,7 +285,7 @@ workflow ONTVAR {
         def idx_out = idx.exists() ? idx : []
         tuple(updated_meta, file(annotated_vcf), idx_out)
     }
-    
+
     ch_bcftools_regions = Channel.value([])
     ch_bcftools_targets = Channel.value([])
     ch_bcftools_samples = Channel.value([])
@@ -345,7 +345,7 @@ workflow ONTVAR {
 
     ANNOTSV_PER_SAMPLE(
         AF_FILTER.out.vcf
-            .map { meta, vcf -> 
+            .map { meta, vcf ->
                 def updated_meta = [id: meta.sample ?: meta.id, sample: meta.sample ?: meta.id, step: "final_annotation"]
                 tuple(updated_meta, vcf, [], [])
             },
@@ -364,7 +364,7 @@ workflow ONTVAR {
         .collect()
 
     jasminesv_cohort_input = sample_consensus_vcfs
-        .map { vcf_list -> 
+        .map { vcf_list ->
         tuple([id: "cohort"], vcf_list, [], [])
     }
 
@@ -451,7 +451,7 @@ workflow ONTVAR {
     // ──────────────────────────────────────────────────────────────────────
     // Collate and save software versions
     // ──────────────────────────────────────────────────────────────────────
-    
+
     ch_versions = ch_versions.mix(SNIFFLES.out.versions)
     ch_versions = ch_versions.mix(CUTESV.out.versions)
     ch_versions = ch_versions.mix(SEVERUS_WITH_CONTROL.out.versions)
@@ -527,4 +527,3 @@ workflow ONTVAR {
     THE END
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-

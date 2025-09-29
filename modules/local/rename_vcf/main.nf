@@ -4,10 +4,10 @@ process RENAME_VCF {
 
     input:
       tuple val(meta), path(vcf), val(suffix)
-    
+
     output:
       tuple val(meta), path("${meta.id}_${suffix}.vcf")
-    
+
     when:
       task.ext.when == null || task.ext.when
 

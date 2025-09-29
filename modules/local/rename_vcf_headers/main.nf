@@ -11,7 +11,7 @@ process RENAME_VCF_HEADERS {
 
     input:
     tuple val(meta), path(vcf)
-    
+
     output:
     tuple val(meta), path(vcf)
 
@@ -27,4 +27,3 @@ process RENAME_VCF_HEADERS {
     fi
     """
 }
-

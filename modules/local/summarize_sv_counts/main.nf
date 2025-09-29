@@ -3,7 +3,7 @@ process SUMMARIZE_SV_COUNTS {
     label 'process_low'
 
     conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ? 
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/19/198b15b0581f19cfa29c5ff506b138aeb1bedb226d2ca308c46705bab133c1f0/data' :
         'community.wave.seqera.io/library/bcftools_coreutils_gawk_gzip_pruned:e1a91ca0c5f22302' }"
 
@@ -28,31 +28,31 @@ def analyze_vcf(vcf_file):
         "total_variants": 0,
         "sv_types": defaultdict(lambda: {"count": 0, "svlen_data": []})
     }
-    
+
     if not vcf_file or not os.path.exists(vcf_file):
         return result
-    
+
     try:
         with open(vcf_file, 'r') as f:
             for line in f:
                 if line.startswith('#'):
                     continue
-                
+
                 fields = line.strip().split('\\t')
                 if len(fields) < 8:
                     continue
-                
+
                 result["total_variants"] += 1
                 info = fields[7]
-                
+
                 svtype = "UNK"
                 for item in info.split(';'):
                     if item.startswith('SVTYPE='):
                         svtype = item.split('=')[1]
                         break
-                
+
                 result["sv_types"][svtype]["count"] += 1
-                
+
                 for item in info.split(';'):
                     if item.startswith('SVLEN='):
                         try:
@@ -61,10 +61,10 @@ def analyze_vcf(vcf_file):
                         except:
                             pass
                         break
-    
+
     except Exception as e:
         print(f"Error processing {vcf_file}: {e}")
-    
+
     # Compute statistics
     for svtype, data in result["sv_types"].items():
         if data["svlen_data"]:
@@ -75,7 +75,7 @@ def analyze_vcf(vcf_file):
             data["svlen_median"] = round(statistics.median(lengths), 1)
             data["svlen_stdev"] = round(statistics.stdev(lengths) if len(lengths) > 1 else 0, 2)
         del data["svlen_data"]
-    
+
     return result
 
 # Get inputs
@@ -92,7 +92,7 @@ for vcf_file in vcf_list:
         sample_id = basename.split('_')[0]  # e.g., SAMPLE_caller.vcf
     else:
         sample_id = basename.split('.')[0]   # fallback to full basename without extension
-    
+
     if sample_id not in sample_data:
         sample_data[sample_id] = []
     sample_data[sample_id].append(vcf_file)
@@ -107,11 +107,11 @@ if use_sample_grouping:
         ("analysis_type", "multi_sample"),
         ("samples", {})
     ])
-    
+
     for sample_id, sample_vcfs in sample_data.items():
         print(f"Processing sample: {sample_id}")
         sample_vcfs_list = sample_vcfs if isinstance(sample_vcfs, list) else [sample_vcfs]
-        
+
         if len(sample_vcfs_list) > 1:
             # Multi-caller for this sample
             sample_result = OrderedDict([
@@ -122,7 +122,7 @@ if use_sample_grouping:
                     "sv_types": defaultdict(lambda: {"count": 0, "svlen_data": []})
                 })
             ])
-            
+
             caller_map = {}
             for vcf_file in sample_vcfs_list:
                 vcf_name = os.path.basename(str(vcf_file)).lower()
@@ -134,17 +134,17 @@ if use_sample_grouping:
                     caller_map[vcf_file] = 'severus'
                 else:
                     caller_map[vcf_file] = 'unknown'
-            
+
             for vcf_file, caller in caller_map.items():
                 analyzed_data = analyze_vcf(str(vcf_file))
                 sample_result["callers"][caller] = analyzed_data
-                
+
                 sample_result["combined_stats"]["total_variants"] += analyzed_data["total_variants"]
                 for svtype, data in analyzed_data["sv_types"].items():
                     sample_result["combined_stats"]["sv_types"][svtype]["count"] += data["count"]
                     if "svlen_data" in data:
                         sample_result["combined_stats"]["sv_types"][svtype]["svlen_data"].extend(data["svlen_data"])
-            
+
             # Compute combined stats
             for svtype, data in sample_result["combined_stats"]["sv_types"].items():
                 if data["svlen_data"]:
@@ -155,7 +155,7 @@ if use_sample_grouping:
                     data["svlen_median"] = round(statistics.median(lengths), 1)
                     data["svlen_stdev"] = round(statistics.stdev(lengths) if len(lengths) > 1 else 0, 2)
                     del data["svlen_data"]
-            
+
         else:
             # Single VCF for this sample
             analyzed_data = analyze_vcf(str(sample_vcfs_list[0]))
@@ -164,7 +164,7 @@ if use_sample_grouping:
                 ("total_variants", analyzed_data["total_variants"]),
                 ("sv_types", analyzed_data["sv_types"])
             ])
-        
+
         result["samples"][sample_id] = sample_result
 
 else:
@@ -180,7 +180,7 @@ else:
                 "sv_types": defaultdict(lambda: {"count": 0, "svlen_data": []})
             })
         ])
-        
+
         caller_map = {}
         for vcf_file in vcf_list:
             vcf_name = os.path.basename(vcf_file).lower()
@@ -192,17 +192,17 @@ else:
                 caller_map[vcf_file] = 'severus'
             else:
                 caller_map[vcf_file] = 'unknown'
-        
+
         for vcf_file, caller in caller_map.items():
             analyzed_data = analyze_vcf(vcf_file)
             result["callers"][caller] = analyzed_data
-            
+
             result["combined_stats"]["total_variants"] += analyzed_data["total_variants"]
             for svtype, data in analyzed_data["sv_types"].items():
                 result["combined_stats"]["sv_types"][svtype]["count"] += data["count"]
                 if "svlen_data" in data:
                     result["combined_stats"]["sv_types"][svtype]["svlen_data"].extend(data["svlen_data"])
-        
+
         # Compute combined statistics
         for svtype, data in result["combined_stats"]["sv_types"].items():
             if data["svlen_data"]:
@@ -213,12 +213,12 @@ else:
                 data["svlen_median"] = round(statistics.median(lengths), 1)
                 data["svlen_stdev"] = round(statistics.stdev(lengths) if len(lengths) > 1 else 0, 2)
                 del data["svlen_data"]
-    
+
     else:
         # Single VCF analysis
         vcf_file = vcf_list[0] if vcf_list else ""
         analyzed_data = analyze_vcf(vcf_file)
-        
+
         result = OrderedDict([
             ("stage", stage),
             ("analysis_type", "single_vcf"),

@@ -3,5 +3,5 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - htslib   # for bgzip and zcat
+  - htslib # for bgzip and zcat
   - awk
