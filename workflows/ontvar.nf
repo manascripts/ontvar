@@ -20,6 +20,7 @@ include { JASMINESV as JASMINESV_SAMPLE } from '../modules/nf-core/jasminesv/mai
 include { JASMINE_HEADER_FIX } from '../modules/local/jasmine_header_fix/main'
 include { JASMINESV as JASMINESV_COHORT } from '../modules/nf-core/jasminesv/main'
 include { FILTER_CHR } from '../modules/local/filter_chr/main'
+include { ANNOTSV_ANNOTSV as ANNOTSV_COHORT_RAW } from '../modules/nf-core/annotsv/annotsv/main'
 include { ANNOTSV_ANNOTSV as ANNOTSV_COHORT    } from '../modules/nf-core/annotsv/annotsv/main'
 include { ANNOTSV_ANNOTSV as ANNOTSV_PER_SAMPLE_RAW    } from '../modules/nf-core/annotsv/annotsv/main'
 include { ANNOTSV_ANNOTSV as ANNOTSV_PER_SAMPLE    } from '../modules/nf-core/annotsv/annotsv/main'
@@ -28,7 +29,8 @@ include { UNTAR as UNTAR_ANNOTSV } from '../modules/nf-core/untar/main'
 include { SUMMARIZE_SV_COUNTS as SUMMARIZE_CALLERS          } from '../modules/local/summarize_sv_counts/main'
 include { SUMMARIZE_SV_COUNTS as SUMMARIZE_CALLER_MERGED    } from '../modules/local/summarize_sv_counts/main'
 include { SUMMARIZE_SV_COUNTS as SUMMARIZE_CALLER_MERGED_FILTERED  } from '../modules/local/summarize_sv_counts/main'
-include { SUMMARIZE_SV_COUNTS as SUMMARIZE_COHORT    } from '../modules/local/summarize_sv_counts/main'
+include { SUMMARIZE_SV_COUNTS as SUMMARIZE_COHORT_ANNOTATED } from '../modules/local/summarize_sv_counts/main'
+include { SUMMARIZE_SV_COUNTS as SUMMARIZE_COHORT_FILTERED  } from '../modules/local/summarize_sv_counts/main'
 include { SVDB_QUERY as SVDB_QUERY_SAMPLE } from '../modules/nf-core/svdb/query/main'
 include { SVDB_QUERY as SVDB_QUERY_COHORT } from '../modules/nf-core/svdb/query/main'
 include { BCFTOOLS_VIEW as CALLER_SUPPORT_FILTER } from '../modules/nf-core/bcftools/view/main'
@@ -405,6 +407,26 @@ workflow ONTVAR {
         ch_svdb_cohort_bedpe
     )
 
+    ch_candidate_genes_cohort    = Channel.value(tuple([id: "candidate_genes"], []))
+    ch_false_positive_snv_cohort = Channel.value(tuple([id: "false_positive_snv"], []))
+    ch_gene_transcripts_cohort   = Channel.value(tuple([id: "gene_transcripts"], []))
+
+    ANNOTSV_COHORT_RAW(
+        SVDB_QUERY_COHORT.out.vcf
+            .map { meta, vcf -> tuple(meta, vcf, [], []) },
+        ch_annotsv_annotations,
+        ch_candidate_genes_cohort,
+        ch_false_positive_snv_cohort,
+        ch_gene_transcripts_cohort
+    )
+
+    // Cohort summaries - one per cohort directory
+    SUMMARIZE_COHORT_ANNOTATED(
+        SVDB_QUERY_COHORT.out.vcf
+            .map { meta, vcf -> tuple([id: "cohort_annotated_summary"], vcf) },
+        Channel.value("cohort_annotated")
+    )
+
     // ──────────────────────────────────────────────────────────────────────
     // Filter annotated SVs based on AF
     // ──────────────────────────────────────────────────────────────────────
@@ -421,10 +443,10 @@ workflow ONTVAR {
     )
 
     // Cohort summaries - one per cohort directory
-    SUMMARIZE_COHORT(
+    SUMMARIZE_COHORT_FILTERED(
         AF_FILTER_COHORT.out.vcf
-            .map { meta, vcf -> tuple([id: "cohort_summary"], vcf) },
-        Channel.value("cohort")
+            .map { meta, vcf -> tuple([id: "cohort_filtered_summary"], vcf) },
+        Channel.value("cohort_filtered")
     )
 
     // ──────────────────────────────────────────────────────────────────────
@@ -435,10 +457,6 @@ workflow ONTVAR {
         meta.id = 'cohort_annotated'
         tuple(meta, filtered_vcf, [], [])
     }
-
-    ch_candidate_genes_cohort    = Channel.value(tuple([id: "candidate_genes"], []))
-    ch_false_positive_snv_cohort = Channel.value(tuple([id: "false_positive_snv"], []))
-    ch_gene_transcripts_cohort   = Channel.value(tuple([id: "gene_transcripts"], []))
 
     ANNOTSV_COHORT(
         annotsv_input,
