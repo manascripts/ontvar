@@ -338,7 +338,11 @@ workflow ONTVAR {
 
     ANNOTSV_PER_SAMPLE_RAW(
         SVDB_QUERY_SAMPLE.out.vcf
-            .map { meta, vcf -> tuple(meta, vcf, [], []) },
+            .map { meta, vcf -> 
+                def updated_meta = meta.clone()
+                updated_meta.id = "${meta.sample ?: meta.id}_annotated"  // Make ID unique
+                tuple(updated_meta, vcf, [], []) 
+            },
         ch_annotsv_annotations,
         ch_candidate_genes,
         ch_false_positive_snv,
@@ -348,7 +352,11 @@ workflow ONTVAR {
     ANNOTSV_PER_SAMPLE(
         AF_FILTER.out.vcf
             .map { meta, vcf ->
-                def updated_meta = [id: meta.sample ?: meta.id, sample: meta.sample ?: meta.id, step: "final_annotation"]
+                def updated_meta = [
+                    id: "${meta.sample ?: meta.id}_filtered",  // Make ID unique
+                    sample: meta.sample ?: meta.id, 
+                    step: "final_annotation"
+                ]
                 tuple(updated_meta, vcf, [], [])
             },
         ch_annotsv_annotations,
@@ -413,7 +421,13 @@ workflow ONTVAR {
 
     ANNOTSV_COHORT_RAW(
         SVDB_QUERY_COHORT.out.vcf
-            .map { meta, vcf -> tuple(meta, vcf, [], []) },
+            .map { meta, vcf -> 
+            def updated_meta = [
+                id: 'cohort_annotated',
+                sample: 'cohort_annotated', 
+                step: 'raw_annotation'
+            ]
+            tuple(updated_meta, vcf, [], []) },
         ch_annotsv_annotations,
         ch_candidate_genes_cohort,
         ch_false_positive_snv_cohort,
@@ -454,8 +468,12 @@ workflow ONTVAR {
     // ──────────────────────────────────────────────────────────────────────
 
     annotsv_input = AF_FILTER_COHORT.out.vcf.map { meta, filtered_vcf ->
-        meta.id = 'cohort_annotated'
-        tuple(meta, filtered_vcf, [], [])
+        def updated_meta = [
+            id: 'cohort_filtered',
+            sample: 'cohort_filtered',
+            step: 'final_annotation'
+        ]
+        tuple(updated_meta, filtered_vcf, [], [])
     }
 
     ANNOTSV_COHORT(
@@ -464,7 +482,7 @@ workflow ONTVAR {
         ch_candidate_genes_cohort,
         ch_false_positive_snv_cohort,
         ch_gene_transcripts_cohort
-    )
+)
 
     // ──────────────────────────────────────────────────────────────────────
     // Collate and save software versions
