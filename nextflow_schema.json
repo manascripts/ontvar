@@ -542,6 +542,30 @@
                     "description": "Output VCF format in addition to TSV (1=yes, 0=no).",
                     "fa_icon": "fas fa-file-code"
                 },
+                "svinputinfo": {
+                    "type": "integer",
+                    "default": 1,
+                    "enum": [0, 1],
+                    "description": "Report ID, QUAL, FILTER fields in TSV output (required for VCF output).",
+                    "fa_icon": "fas fa-info-circle",
+                    "help_text": "Set to 1 to include VCF fields (ID, QUAL, FILTER, etc.) in TSV output. Required when -vcf is set to 1."
+                },
+                "svtbedcol": {
+                    "type": ["integer", "null"],
+                    "default": 6,
+                    "minimum": 4,
+                    "description": "Column number for SV type in BED input files (not needed for VCF input).",
+                    "fa_icon": "fas fa-columns",
+                    "help_text": "Only required when input is BED format. Specifies which column contains the SV type information."
+                },
+                "samplesidbedcol": {
+                    "type": ["integer", "null"],
+                    "default": 7,
+                    "minimum": 4,
+                    "description": "Column number for sample ID in BED input files (not needed for VCF input).",
+                    "fa_icon": "fas fa-columns",
+                    "help_text": "Only required when input is BED format. Specifies which column contains the sample ID. Highly recommended to avoid 'NA' sample names."
+                },
                 "annotsv_min_sv_size": {
                     "type": "integer",
                     "default": 0,
