@@ -573,6 +573,14 @@
                     "description": "Minimum SV size to annotate with AnnotSV (in bp). Use 0 to annotate all SVs.",
                     "fa_icon": "fas fa-ruler"
                 },
+                "variantconvert_mode": {
+                    "type": "string",
+                    "default": "full",
+                    "enum": ["combined", "full", "fullsplit"],
+                    "description": "AnnotSV variant convert mode for VCF output.",
+                    "fa_icon": "fas fa-exchange-alt",
+                    "help_text": "Controls how AnnotSV handles multiple annotations per variant when converting to VCF. 'full' mode ensures one line per variant for proper VCF conversion. 'combined' is the default AnnotSV behavior. 'fullsplit' keeps both full and split annotations."
+                },
                 "annotsv_args": {
                     "type": "string",
                     "default": "",

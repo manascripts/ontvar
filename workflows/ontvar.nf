@@ -340,7 +340,7 @@ workflow ONTVAR {
         SVDB_QUERY_SAMPLE.out.vcf
             .map { meta, vcf -> 
                 def updated_meta = meta.clone()
-                updated_meta.id = "${meta.sample ?: meta.id}_annotated"  // Make ID unique
+                updated_meta.id = "${meta.sample ?: meta.id}_annotated"
                 tuple(updated_meta, vcf, [], []) 
             },
         ch_annotsv_annotations,
@@ -353,7 +353,7 @@ workflow ONTVAR {
         AF_FILTER.out.vcf
             .map { meta, vcf ->
                 def updated_meta = [
-                    id: "${meta.sample ?: meta.id}_filtered",  // Make ID unique
+                    id: "${meta.sample ?: meta.id}_filtered",
                     sample: meta.sample ?: meta.id, 
                     step: "final_annotation"
                 ]
@@ -422,12 +422,12 @@ workflow ONTVAR {
     ANNOTSV_COHORT_RAW(
         SVDB_QUERY_COHORT.out.vcf
             .map { meta, vcf -> 
-            def updated_meta = [
-                id: 'cohort_annotated',
-                sample: 'cohort_annotated', 
-                step: 'raw_annotation'
-            ]
-            tuple(updated_meta, vcf, [], []) },
+                def updated_meta = [
+                    id: "${meta.id}_annotated",
+                    sample: "${meta.id}_annotated",
+                ]
+                tuple(updated_meta, vcf, [], [])
+            },
         ch_annotsv_annotations,
         ch_candidate_genes_cohort,
         ch_false_positive_snv_cohort,
@@ -470,8 +470,7 @@ workflow ONTVAR {
     annotsv_input = AF_FILTER_COHORT.out.vcf.map { meta, filtered_vcf ->
         def updated_meta = [
             id: 'cohort_filtered',
-            sample: 'cohort_filtered',
-            step: 'final_annotation'
+            sample: 'cohort_filtered'
         ]
         tuple(updated_meta, filtered_vcf, [], [])
     }
