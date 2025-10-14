@@ -34,7 +34,198 @@
 
 ## Workflow Overview
 
-![ONTVar Workflow](docs/ontvar-mmd-14-10-2025.svg)
+```mermaid 
+---
+config:
+  layout: elk
+---
+flowchart TB
+    INPUT_SAMPLE["Sample Sheet"] L_INPUT_SAMPLE_SPLIT_0@--> SPLIT["Split by Type"]
+    INPUT_ANNOT["AnnotSV Annotations"] L_INPUT_ANNOT_ANNOT_SETUP_0@--> ANNOT_SETUP["Annotations<br>Available?"]
+    SPLIT L_SPLIT_CASES_0@--> CASES["Case Samples"] & CONTROLS["Control Samples"]
+    CASES L_CASES_SNIFFLES_0@--> SNIFFLES["Sniffles"] & CUTESV["cuteSV"] & SEVERUS_CTRL["Severus<br>(with control)"] & SEVERUS_NO["Severus<br>(no control)"]
+    CONTROLS L_CONTROLS_SEVERUS_CTRL_0@--> SEVERUS_CTRL
+    SNIFFLES L_SNIFFLES_FMT1_0@--> FMT1["Format VCF Headers"]
+    CUTESV L_CUTESV_FMT2_0@--> FMT2["Format VCF Headers"]
+    SEVERUS_CTRL L_SEVERUS_CTRL_FMT3_0@--> FMT3["Format VCF Headers"]
+    SEVERUS_NO L_SEVERUS_NO_FMT3_0@--> FMT3
+    FMT1 L_FMT1_RAW_VCFS_0@--> RAW_VCFS["Individual Caller VCFs"]
+    FMT2 L_FMT2_RAW_VCFS_0@--> RAW_VCFS
+    FMT3 L_FMT3_RAW_VCFS_0@--> RAW_VCFS
+    RAW_VCFS L_RAW_VCFS_SUM_RAW_0@--> SUM_RAW["Summarize Raw Calls"] & JASMINE_SAMPLE["Jasmine: Merge Callers<br>(per sample)"]
+    SUM_RAW L_SUM_RAW_PLOT_RAW_0@--> PLOT_RAW["Plot: Raw Caller Counts"]
+    JASMINE_SAMPLE L_JASMINE_SAMPLE_FIX_HDR_0@--> FIX_HDR["Fix VCF Headers"]
+    FIX_HDR L_FIX_HDR_FILTER_CHR_0@--> FILTER_CHR["Filter Chromosomes"]
+    FILTER_CHR L_FILTER_CHR_SORT1_0@--> SORT1["Sort VCF"]
+    SORT1 --> SUPPORT_FILTER["Filter: ≥2 Caller Support"]
+    SUPPORT_FILTER L_SUPPORT_FILTER_SUM_CONSENSUS_0@--> SUM_CONSENSUS["Summarize Consensus Calls"] & SVDB_SAMPLE["Annotate: Population AF<br>(sample)"] & COLLECT["Sample VCFs"]
+    SUM_CONSENSUS L_SUM_CONSENSUS_PLOT_CONS_0@--> PLOT_CONS["Plot: Consensus Counts"]
+    SVDB_SAMPLE L_SVDB_SAMPLE_ANNOT_SAMPLE_RAW_0@--> ANNOT_SAMPLE_RAW["AnnotSV: FUNCTIONAL ANNOTATIONS<br>(sample: before AF filter)"] & AF_SAMPLE["Filter: Allele Frequency<br>(per sample)"]
+    AF_SAMPLE L_AF_SAMPLE_SUM_FILT_0@--> SUM_FILT["Summarize Filtered Calls"] & ANNOT_SAMPLE_FINAL["AnnotSV: FUNCTIONAL ANNOTATIONS <br>(sample: after AF FILTER)"]
+    SUM_FILT L_SUM_FILT_PLOT_FILT_0@--> PLOT_FILT["Plot: Filtered Counts"]
+    COLLECT L_COLLECT_JASMINE_COHORT_0@--> JASMINE_COHORT["Jasmine: Merge Samples<br>(cohort-wide)"]
+    JASMINE_COHORT L_JASMINE_COHORT_SVDB_COHORT_0@--> SVDB_COHORT["Annotate: Population AF<br>(cohort)"]
+    SVDB_COHORT L_SVDB_COHORT_ANNOT_COHORT_RAW_0@--> ANNOT_COHORT_RAW["AnnotSV: FUNCTIONAL ANNOTATIONS<br>(cohort: before AF filter)"] & SUM_COHORT_RAW["Summarize Cohort<br>(annotated)"] & AF_COHORT["Filter: Allele Frequency<br>(cohort)"]
+    SUM_COHORT_RAW L_SUM_COHORT_RAW_PLOT_COHORT_RAW_0@--> PLOT_COHORT_RAW["Plot: Cohort Annotated"]
+    AF_COHORT L_AF_COHORT_SUM_COHORT_FILT_0@--> SUM_COHORT_FILT["Summarize Cohort<br>(filtered)"] & ANNOT_COHORT_FINAL["AnnotSV: FUNCTIONAL ANNOTATIONS<br>(cohort: after AF filter)"]
+    SUM_COHORT_FILT L_SUM_COHORT_FILT_PLOT_COHORT_FILT_0@--> PLOT_COHORT_FILT["Plot: Cohort Filtered"]
+    ANNOT_SETUP L_ANNOT_SETUP_INSTALL_0@-- No --> INSTALL["Install AnnotSV data"]
+    ANNOT_SETUP L_ANNOT_SETUP_CHECK_TAR_0@-- Yes --> CHECK_TAR["tar.gz?"]
+    CHECK_TAR L_CHECK_TAR_UNTAR_0@-- Yes --> UNTAR["Extract Archive"]
+    CHECK_TAR L_CHECK_TAR_ANNOT_DB_0@-- No --> ANNOT_DB["AnnotSV data"]
+    INSTALL L_INSTALL_ANNOT_DB_0@--> ANNOT_DB
+    UNTAR L_UNTAR_ANNOT_DB_0@--> ANNOT_DB
+    ANNOT_DB L_ANNOT_DB_ANNOT_SAMPLE_RAW_0@--> ANNOT_SAMPLE_RAW & ANNOT_SAMPLE_FINAL & ANNOT_COHORT_RAW & ANNOT_COHORT_FINAL
+    ANNOT_SAMPLE_FINAL L_ANNOT_SAMPLE_FINAL_OUT_SAMPLE_0@--> OUT_SAMPLE["Sample-Level Results"]
+    ANNOT_COHORT_FINAL L_ANNOT_COHORT_FINAL_OUT_COHORT_0@--> OUT_COHORT["Cohort-Level Results"]
+    INPUT_REF["Reference Genome"]
+    INPUT_SAMPLE@{ shape: rounded}
+    SPLIT@{ shape: rounded}
+    INPUT_ANNOT@{ shape: rounded}
+    ANNOT_SETUP@{ shape: rounded}
+    CASES@{ shape: rounded}
+    CONTROLS@{ shape: rounded}
+    SNIFFLES@{ shape: rounded}
+    CUTESV@{ shape: rounded}
+    SEVERUS_CTRL@{ shape: rounded}
+    SEVERUS_NO@{ shape: rounded}
+    FMT1@{ shape: rounded}
+    FMT2@{ shape: rounded}
+    FMT3@{ shape: rounded}
+    RAW_VCFS@{ shape: rounded}
+    SUM_RAW@{ shape: rounded}
+    JASMINE_SAMPLE@{ shape: rounded}
+    PLOT_RAW@{ shape: rounded}
+    FIX_HDR@{ shape: rounded}
+    FILTER_CHR@{ shape: rounded}
+    SORT1@{ shape: rounded}
+    SUPPORT_FILTER@{ shape: rounded}
+    SUM_CONSENSUS@{ shape: rounded}
+    SVDB_SAMPLE@{ shape: rounded}
+    COLLECT@{ shape: rounded}
+    PLOT_CONS@{ shape: rounded}
+    ANNOT_SAMPLE_RAW@{ shape: rounded}
+    AF_SAMPLE@{ shape: rounded}
+    SUM_FILT@{ shape: rounded}
+    ANNOT_SAMPLE_FINAL@{ shape: rounded}
+    PLOT_FILT@{ shape: rounded}
+    JASMINE_COHORT@{ shape: rounded}
+    SVDB_COHORT@{ shape: rounded}
+    ANNOT_COHORT_RAW@{ shape: rounded}
+    SUM_COHORT_RAW@{ shape: rounded}
+    AF_COHORT@{ shape: rounded}
+    PLOT_COHORT_RAW@{ shape: rounded}
+    SUM_COHORT_FILT@{ shape: rounded}
+    ANNOT_COHORT_FINAL@{ shape: rounded}
+    PLOT_COHORT_FILT@{ shape: rounded}
+    INSTALL@{ shape: rounded}
+    CHECK_TAR@{ shape: rounded}
+    UNTAR@{ shape: rounded}
+    ANNOT_DB@{ shape: rounded}
+    OUT_SAMPLE@{ shape: rounded}
+    OUT_COHORT@{ shape: rounded}
+    INPUT_REF@{ shape: rounded}
+     INPUT_SAMPLE:::input
+     SPLIT:::decision
+     INPUT_ANNOT:::input
+     ANNOT_SETUP:::decision
+     SNIFFLES:::caller
+     CUTESV:::caller
+     SEVERUS_CTRL:::caller
+     SEVERUS_NO:::caller
+     FMT1:::process
+     FMT2:::process
+     FMT3:::process
+     SUM_RAW:::summary
+     JASMINE_SAMPLE:::process
+     PLOT_RAW:::output
+     FIX_HDR:::process
+     FILTER_CHR:::process
+     SORT1:::process
+     SUPPORT_FILTER:::filter
+     SUM_CONSENSUS:::summary
+     SVDB_SAMPLE:::process
+     PLOT_CONS:::output
+     ANNOT_SAMPLE_RAW:::process
+     AF_SAMPLE:::filter
+     SUM_FILT:::summary
+     ANNOT_SAMPLE_FINAL:::process
+     PLOT_FILT:::output
+     JASMINE_COHORT:::process
+     SVDB_COHORT:::process
+     ANNOT_COHORT_RAW:::process
+     SUM_COHORT_RAW:::summary
+     AF_COHORT:::filter
+     PLOT_COHORT_RAW:::output
+     SUM_COHORT_FILT:::summary
+     ANNOT_COHORT_FINAL:::process
+     PLOT_COHORT_FILT:::output
+     INSTALL:::process
+     CHECK_TAR:::decision
+     UNTAR:::process
+     OUT_SAMPLE:::output
+     OUT_COHORT:::output
+     INPUT_REF:::input
+    classDef input fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef caller fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef process fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef filter fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef summary fill:#fff8e1,stroke:#f57f17,stroke-width:2px
+    classDef output fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
+    classDef decision fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    L_INPUT_SAMPLE_SPLIT_0@{ animation: fast } 
+    L_INPUT_ANNOT_ANNOT_SETUP_0@{ animation: fast } 
+    L_SPLIT_CASES_0@{ animation: fast } 
+    L_SPLIT_CONTROLS_0@{ animation: fast } 
+    L_CASES_SNIFFLES_0@{ animation: fast } 
+    L_CASES_CUTESV_0@{ animation: fast } 
+    L_CASES_SEVERUS_NO_0@{ animation: fast } 
+    L_CONTROLS_SEVERUS_CTRL_0@{ animation: fast } 
+    L_SNIFFLES_FMT1_0@{ animation: fast } 
+    L_CUTESV_FMT2_0@{ animation: fast } 
+    L_SEVERUS_CTRL_FMT3_0@{ animation: fast } 
+    L_SEVERUS_NO_FMT3_0@{ animation: fast } 
+    L_FMT1_RAW_VCFS_0@{ animation: fast } 
+    L_FMT2_RAW_VCFS_0@{ animation: fast } 
+    L_FMT3_RAW_VCFS_0@{ animation: fast } 
+    L_RAW_VCFS_SUM_RAW_0@{ animation: fast } 
+    L_RAW_VCFS_JASMINE_SAMPLE_0@{ animation: fast } 
+    L_SUM_RAW_PLOT_RAW_0@{ animation: fast } 
+    L_JASMINE_SAMPLE_FIX_HDR_0@{ animation: fast } 
+    L_FIX_HDR_FILTER_CHR_0@{ animation: fast } 
+    L_FILTER_CHR_SORT1_0@{ animation: fast } 
+    L_SUPPORT_FILTER_SUM_CONSENSUS_0@{ animation: none } 
+    L_SUPPORT_FILTER_SVDB_SAMPLE_0@{ animation: fast } 
+    L_SUPPORT_FILTER_COLLECT_0@{ animation: fast } 
+    L_SUM_CONSENSUS_PLOT_CONS_0@{ animation: none } 
+    L_SVDB_SAMPLE_ANNOT_SAMPLE_RAW_0@{ animation: fast } 
+    L_SVDB_SAMPLE_AF_SAMPLE_0@{ animation: fast } 
+    L_AF_SAMPLE_SUM_FILT_0@{ animation: fast } 
+    L_AF_SAMPLE_ANNOT_SAMPLE_FINAL_0@{ animation: fast } 
+    L_SUM_FILT_PLOT_FILT_0@{ animation: fast } 
+    L_COLLECT_JASMINE_COHORT_0@{ animation: fast } 
+    L_JASMINE_COHORT_SVDB_COHORT_0@{ animation: fast } 
+    L_SVDB_COHORT_ANNOT_COHORT_RAW_0@{ animation: fast } 
+    L_SVDB_COHORT_SUM_COHORT_RAW_0@{ animation: fast } 
+    L_SVDB_COHORT_AF_COHORT_0@{ animation: fast } 
+    L_SUM_COHORT_RAW_PLOT_COHORT_RAW_0@{ animation: fast } 
+    L_AF_COHORT_SUM_COHORT_FILT_0@{ animation: fast } 
+    L_AF_COHORT_ANNOT_COHORT_FINAL_0@{ animation: fast } 
+    L_SUM_COHORT_FILT_PLOT_COHORT_FILT_0@{ animation: fast } 
+    L_ANNOT_SETUP_INSTALL_0@{ animation: slow } 
+    L_ANNOT_SETUP_CHECK_TAR_0@{ animation: slow } 
+    L_CHECK_TAR_UNTAR_0@{ animation: fast } 
+    L_CHECK_TAR_ANNOT_DB_0@{ animation: fast } 
+    L_INSTALL_ANNOT_DB_0@{ animation: fast } 
+    L_UNTAR_ANNOT_DB_0@{ animation: fast } 
+    L_ANNOT_DB_ANNOT_SAMPLE_RAW_0@{ animation: fast } 
+    L_ANNOT_DB_ANNOT_SAMPLE_FINAL_0@{ animation: fast } 
+    L_ANNOT_DB_ANNOT_COHORT_RAW_0@{ animation: fast } 
+    L_ANNOT_DB_ANNOT_COHORT_FINAL_0@{ animation: fast } 
+    L_ANNOT_SAMPLE_FINAL_OUT_SAMPLE_0@{ animation: fast } 
+    L_ANNOT_COHORT_FINAL_OUT_COHORT_0@{ animation: fast }
+
+```
 
 ## Usage
 
