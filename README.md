@@ -38,6 +38,8 @@
 ---
 config:
   layout: elk
+  themeVariables:
+    background: white
 ---
 flowchart TB
     INPUT_SAMPLE["Sample Sheet"] L_INPUT_SAMPLE_SPLIT_0@--> SPLIT["Split by Type"]
@@ -179,6 +181,7 @@ flowchart TB
     L_SPLIT_CONTROLS_0@{ animation: fast } 
     L_CASES_SNIFFLES_0@{ animation: fast } 
     L_CASES_CUTESV_0@{ animation: fast } 
+    L_CASES_SEVERUS_CTRL_0@{ animation: fast } 
     L_CASES_SEVERUS_NO_0@{ animation: fast } 
     L_CONTROLS_SEVERUS_CTRL_0@{ animation: fast } 
     L_SNIFFLES_FMT1_0@{ animation: fast } 
@@ -224,6 +227,7 @@ flowchart TB
     L_ANNOT_DB_ANNOT_COHORT_FINAL_0@{ animation: fast } 
     L_ANNOT_SAMPLE_FINAL_OUT_SAMPLE_0@{ animation: fast } 
     L_ANNOT_COHORT_FINAL_OUT_COHORT_0@{ animation: fast }
+
 
 ```
 
