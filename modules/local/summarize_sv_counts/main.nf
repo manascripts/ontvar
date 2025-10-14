@@ -8,7 +8,7 @@ process SUMMARIZE_SV_COUNTS {
         'community.wave.seqera.io/library/bcftools_coreutils_gawk_gzip_pruned:e1a91ca0c5f22302' }"
 
     input:
-    tuple val(meta), path(vcf_input)  // Can be single VCF or list of VCFs
+    tuple val(meta), path(vcf_input, stageAs: "vcf_?/*")  // Can be single VCF or list of VCFs
     val stage_name
 
     output:
@@ -20,8 +20,14 @@ process SUMMARIZE_SV_COUNTS {
     def vcf_files = is_list ? vcf_input.join(' ') : vcf_input.toString()
     """
     python3 << 'EOF'
-import sys, json, statistics, subprocess, os
+import sys, json, statistics, subprocess, os, gzip
 from collections import defaultdict, OrderedDict
+
+def open_vcf(vcf_file):
+    if vcf_file.endswith('.gz'):
+        return gzip.open(vcf_file, 'rt')
+    else:
+        return open(vcf_file, 'r')
 
 def analyze_vcf(vcf_file):
     result = {
@@ -30,40 +36,80 @@ def analyze_vcf(vcf_file):
     }
 
     if not vcf_file or not os.path.exists(vcf_file):
+        print(f"Warning: VCF file not found or empty: {vcf_file}")
         return result
 
     try:
-        with open(vcf_file, 'r') as f:
+        with open_vcf(vcf_file) as f:
+            line_count = 0
+            variant_count = 0
+            
             for line in f:
+                line_count += 1
+                
+                # Skip header lines
                 if line.startswith('#'):
                     continue
 
                 fields = line.strip().split('\\t')
                 if len(fields) < 8:
+                    print(f"Warning: Malformed line {line_count} in {vcf_file}: insufficient fields")
                     continue
 
+                variant_count += 1
                 result["total_variants"] += 1
                 info = fields[7]
 
+                # Extract SVTYPE
                 svtype = "UNK"
+                info_dict = {}
                 for item in info.split(';'):
-                    if item.startswith('SVTYPE='):
-                        svtype = item.split('=')[1]
-                        break
+                    if '=' in item:
+                        key, val = item.split('=', 1)
+                        info_dict[key] = val
+                
+                # Try different SVTYPE tags
+                if 'SVTYPE' in info_dict:
+                    svtype = info_dict['SVTYPE']
+                elif 'TYPE' in info_dict:
+                    svtype = info_dict['TYPE']
+                else:
+                    # Check ALT field for symbolic SVs
+                    alt = fields[4]
+                    if alt.startswith('<') and alt.endswith('>'):
+                        svtype = alt[1:-1]  # e.g., <DEL> -> DEL
+                    else:
+                        print(f"Warning: No SVTYPE found at line {line_count} in {vcf_file}")
 
                 result["sv_types"][svtype]["count"] += 1
 
-                for item in info.split(';'):
-                    if item.startswith('SVLEN='):
-                        try:
-                            svlen = abs(int(item.split('=')[1]))
-                            result["sv_types"][svtype]["svlen_data"].append(svlen)
-                        except:
-                            pass
-                        break
+                # Extract SVLEN
+                svlen = None
+                if 'SVLEN' in info_dict:
+                    try:
+                        # Handle comma-separated values (take first)
+                        svlen_str = info_dict['SVLEN'].split(',')[0]
+                        svlen = abs(int(svlen_str))
+                    except ValueError as e:
+                        print(f"Warning: Invalid SVLEN value '{info_dict['SVLEN']}' at line {line_count}")
+                elif 'END' in info_dict:
+                    # Calculate SVLEN from END - POS
+                    try:
+                        pos = int(fields[1])
+                        end = int(info_dict['END'])
+                        svlen = abs(end - pos)
+                    except ValueError as e:
+                        print(f"Warning: Could not calculate SVLEN from POS/END at line {line_count}")
+                
+                if svlen is not None and svlen > 0:
+                    result["sv_types"][svtype]["svlen_data"].append(svlen)
+            
+            print(f"Processed {vcf_file}: {line_count} total lines, {variant_count} variants")
 
     except Exception as e:
         print(f"Error processing {vcf_file}: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Compute statistics
     for svtype, data in result["sv_types"].items():
@@ -82,6 +128,10 @@ def analyze_vcf(vcf_file):
 vcf_files_str = "${vcf_files}"
 stage = "${stage_name}"
 vcf_list = [f.strip() for f in vcf_files_str.split() if f.strip()]
+
+print(f"Processing {len(vcf_list)} VCF file(s) for stage '{stage}'")
+for vcf in vcf_list:
+    print(f"  - {vcf}")
 
 # Detect if we should group by sample based on filenames
 sample_data = {}
@@ -136,8 +186,10 @@ if use_sample_grouping:
                     caller_map[vcf_file] = 'unknown'
 
             for vcf_file, caller in caller_map.items():
+                print(f"  Analyzing {caller}: {vcf_file}")
                 analyzed_data = analyze_vcf(str(vcf_file))
                 sample_result["callers"][caller] = analyzed_data
+                print(f"    Found {analyzed_data['total_variants']} variants")
 
                 sample_result["combined_stats"]["total_variants"] += analyzed_data["total_variants"]
                 for svtype, data in analyzed_data["sv_types"].items():
@@ -194,8 +246,10 @@ else:
                 caller_map[vcf_file] = 'unknown'
 
         for vcf_file, caller in caller_map.items():
+            print(f"Analyzing {caller}: {vcf_file}")
             analyzed_data = analyze_vcf(vcf_file)
             result["callers"][caller] = analyzed_data
+            print(f"  Found {analyzed_data['total_variants']} variants")
 
             result["combined_stats"]["total_variants"] += analyzed_data["total_variants"]
             for svtype, data in analyzed_data["sv_types"].items():
@@ -217,6 +271,7 @@ else:
     else:
         # Single VCF analysis
         vcf_file = vcf_list[0] if vcf_list else ""
+        print(f"Analyzing single VCF: {vcf_file}")
         analyzed_data = analyze_vcf(vcf_file)
 
         result = OrderedDict([
@@ -230,14 +285,17 @@ else:
 with open("${stage_name}_summary.json", "w") as f:
     json.dump(result, f, indent=2)
 
-print(f"Generated summary for stage: {stage}")
+print(f"\\nGenerated summary for stage: {stage}")
 if 'samples' in result:
     print(f"Samples processed: {len(result['samples'])}")
     for sample_id, sample_data in result['samples'].items():
         if 'total_variants' in sample_data:
             print(f"  {sample_id}: {sample_data['total_variants']} variants")
         elif 'combined_stats' in sample_data:
-            print(f"  {sample_id}: {sample_data['combined_stats']['total_variants']} variants")
+            print(f"  {sample_id}: {sample_data['combined_stats']['total_variants']} variants (combined)")
+            if 'callers' in sample_data:
+                for caller, caller_data in sample_data['callers'].items():
+                    print(f"    - {caller}: {caller_data['total_variants']} variants")
 else:
     print(f"Total variants: {result.get('total_variants', 0)}")
 EOF

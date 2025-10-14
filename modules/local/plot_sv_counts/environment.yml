@@ -1,0 +1,9 @@
+name: plot_sv_counts
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12.10
+  - matplotlib=3.10.6
+  - seaborn=0.13.2
+  - pandas=2.3.3

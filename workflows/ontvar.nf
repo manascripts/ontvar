@@ -31,6 +31,11 @@ include { SUMMARIZE_SV_COUNTS as SUMMARIZE_CALLER_MERGED    } from '../modules/l
 include { SUMMARIZE_SV_COUNTS as SUMMARIZE_CALLER_MERGED_FILTERED  } from '../modules/local/summarize_sv_counts/main'
 include { SUMMARIZE_SV_COUNTS as SUMMARIZE_COHORT_ANNOTATED } from '../modules/local/summarize_sv_counts/main'
 include { SUMMARIZE_SV_COUNTS as SUMMARIZE_COHORT_FILTERED  } from '../modules/local/summarize_sv_counts/main'
+include { PLOT_SV_COUNTS as PLOT_RAW_CALLERS          } from '../modules/local/plot_sv_counts/main'
+include { PLOT_SV_COUNTS as PLOT_CONSENSUS            } from '../modules/local/plot_sv_counts/main'
+include { PLOT_SV_COUNTS as PLOT_FILTERED             } from '../modules/local/plot_sv_counts/main'
+include { PLOT_SV_COUNTS as PLOT_COHORT_ANNOTATED     } from '../modules/local/plot_sv_counts/main'
+include { PLOT_SV_COUNTS as PLOT_COHORT_FILTERED      } from '../modules/local/plot_sv_counts/main'
 include { SVDB_QUERY as SVDB_QUERY_SAMPLE } from '../modules/nf-core/svdb/query/main'
 include { SVDB_QUERY as SVDB_QUERY_COHORT } from '../modules/nf-core/svdb/query/main'
 include { BCFTOOLS_VIEW as CALLER_SUPPORT_FILTER } from '../modules/nf-core/bcftools/view/main'
@@ -168,6 +173,12 @@ workflow ONTVAR {
         Channel.value("raw_calls")
     )
 
+    PLOT_RAW_CALLERS(
+        SUMMARIZE_CALLERS.out.json
+            .map { meta, json -> tuple([id: "raw_callers_plot"], [json]) },
+        Channel.value("Raw Caller SV Counts")
+    )
+
     // ──────────────────────────────────────────────────────────────────────
     // Gather SV caller outputs per sample
     // ──────────────────────────────────────────────────────────────────────
@@ -255,6 +266,12 @@ workflow ONTVAR {
         Channel.value("consensus")
     )
 
+    PLOT_CONSENSUS(
+        SUMMARIZE_CALLER_MERGED.out.json
+            .map { meta, json -> tuple([id: "consensus_plot"], [json]) },
+        Channel.value("Consensus SV Counts")
+    )
+
     // ──────────────────────────────────────────────────────────────────────
     // SAMPLE LEVEL AF ANNOTATION + FILTERING + ANNOTSV ANNOTATION
     // ──────────────────────────────────────────────────────────────────────
@@ -308,6 +325,12 @@ workflow ONTVAR {
     SUMMARIZE_CALLER_MERGED_FILTERED(
         filtered_summary_input,
         Channel.value("filtered")
+    )
+
+    PLOT_FILTERED(
+        SUMMARIZE_CALLER_MERGED_FILTERED.out.json
+            .map { meta, json -> tuple([id: "filtered_plot"], [json]) },
+        Channel.value("Filtered SV Counts")
     )
 
     // ──────────────────────────────────────────────────────────────────────
@@ -441,6 +464,12 @@ workflow ONTVAR {
         Channel.value("cohort_annotated")
     )
 
+    PLOT_COHORT_ANNOTATED(
+        SUMMARIZE_COHORT_ANNOTATED.out.json
+            .map { meta, json -> tuple([id: "cohort_annotated_plot"], [json]) },
+        Channel.value("Cohort Annotated SV Counts")
+    )
+
     // ──────────────────────────────────────────────────────────────────────
     // Filter annotated SVs based on AF
     // ──────────────────────────────────────────────────────────────────────
@@ -461,6 +490,12 @@ workflow ONTVAR {
         AF_FILTER_COHORT.out.vcf
             .map { meta, vcf -> tuple([id: "cohort_filtered_summary"], vcf) },
         Channel.value("cohort_filtered")
+    )
+
+    PLOT_COHORT_FILTERED(
+        SUMMARIZE_COHORT_FILTERED.out.json
+            .map { meta, json -> tuple([id: "cohort_filtered_plot"], [json]) },
+        Channel.value("Cohort Filtered SV Counts")
     )
 
     // ──────────────────────────────────────────────────────────────────────

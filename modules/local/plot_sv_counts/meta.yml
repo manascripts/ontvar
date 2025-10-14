@@ -1,0 +1,54 @@
+name: plot_sv_counts
+description: Plot structural variant counts from JSON summary files
+keywords:
+  - structural variants
+  - plotting
+  - visualization
+  - statistics
+tools:
+  - custom:
+      description: Custom Python script for plotting SV counts
+      homepage: https://github.com/nf-core/ontvar
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'test' ]`
+    - json_files:
+        type: file
+        description: JSON files containing SV count summaries
+        pattern: "*.json"
+  - - plot_title:
+        type: string
+        description: Title for the plot
+output:
+  - png:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'test' ]`
+      - "*.png":
+          type: file
+          description: PNG format plots
+          pattern: "*.png"
+  - pdf:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'test' ]`
+      - "*.pdf":
+          type: file
+          description: PDF format plots
+          pattern: "*.pdf"
+  - versions:
+      - versions.yml:
+          type: file
+          description: File containing software versions
+          pattern: "versions.yml"
+authors:
+  - "@manascripts"
+maintainers:
+  - "@manascripts"
