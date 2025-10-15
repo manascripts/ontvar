@@ -75,15 +75,15 @@ Each row represents a sample with the following columns:
 | `group_id`  | Yes      | Sample group used for pairing identifier                           |
 | `sample_id` | Yes      | Unique ID for each sample                                          |
 | `sample_type`| Yes     | String indicating if sample is a `case` or `control`               |
-| `bam_path`  | Yes*     | Path to aligned BAM file                                           |
+| `bam_path`  | Yes      | Path to aligned BAM file                                           |
 
 Now, you can run the pipeline using:
 
 ```bash
 nextflow run nf-core/ontvar \
-   -profile docker \
+   -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
-   --outdir results \
+   --outdir <OUTDIR> \
    --reference reference.fa
 ```
 
@@ -92,11 +92,12 @@ nextflow run nf-core/ontvar \
 | Parameter | Description                                           | Example                    |
 |-----------|-------------------------------------------------------|----------------------------|
 | `--input` | Path to comma-separated sample sheet file             | `path/to/samplesheet.csv`  |
-| `--outdir`| Output directory path                                 | `path/to/results`          |
+| `--outdir`| Output directory path                                 | `path/to/outdir`           |
 | `--reference` | Reference genome FASTA file                       | `path/to/hg38.fa`          |
 
 
-NOTE: It is recommemned to provide Path to AnnotSV annotation directory as the `--annotsv_annotations` after the first run, to avoid re-downloading them for future runs.
+> [!NOTE] 
+> It is recommemned to provide Path to AnnotSV annotation directory as the `--annotsv_annotations` after the first run, to avoid re-downloading them for future runs.
 
 ### Customizing Pipeline Parameters
 
@@ -111,6 +112,10 @@ The pipeline offers extensive customization options for each step of the analysi
 **Database Parameters**: Specify custom SVDB population databases, panel of normals files, and AnnotSV annotation paths.
 
 These are configurable via command-line flags or in the `nextflow.config` file.
+
+**Chromosome Filtering**
+
+By default, the pipeline retains only main contigs (CHR1-22,X,Y,M). This is controlled in the `FILTER_CHR` module.
 
 ## Advanced Usage
 
@@ -129,14 +134,10 @@ nextflow run nf-core/ontvar \
    --max_needlr_af 0.001
 ```
 
-### Chromosome Filtering
+<!-- > [!WARNING]
+> Please provide pipeline parameters via the CLI or Nextflow `-params-file` option. Custom config files including those provided by the `-c` Nextflow option can be used to provide any configuration _**except for parameters**_; see [docs](https://nf-co.re/docs/usage/getting_started/configuration#custom-configuration-files). -->
 
-By default, the pipeline retains only main contigs (CHR1-22,X,Y,M). This is controlled in the `FILTER_CHR` module.
-
-> [!WARNING]
-> Please provide pipeline parameters via the CLI or Nextflow `-params-file` option. Custom config files including those provided by the `-c` Nextflow option can be used to provide any configuration _**except for parameters**_; see [docs](https://nf-co.re/docs/usage/getting_started/configuration#custom-configuration-files).
-
-For more details and further functionality, please refer to the [usage documentation](https://nf-co.re/ontvar/usage) and the [parameter documentation](https://nf-co.re/ontvar/parameters).
+<!-- For more details and further functionality, please refer to the [usage documentation](https://nf-co.re/ontvar/usage) and the [parameter documentation](https://nf-co.re/ontvar/parameters). -->
 
 ## Pipeline output
 
@@ -281,7 +282,7 @@ This pipeline integrates the following tools:
 
 If you would like to contribute to this pipeline, please see the [contributing guidelines](.github/CONTRIBUTING.md).
 
-For further information or help, don't hesitate to get in touch on the [Slack `#ontvar` channel](https://nfcore.slack.com/channels/ontvar) (you can join with [this invite](https://nf-co.re/join/slack)).
+<!-- For further information or help, don't hesitate to get in touch on the [Slack `#ontvar` channel](https://nfcore.slack.com/channels/ontvar) (you can join with [this invite](https://nf-co.re/join/slack)). -->
 
 ## Citations
 
