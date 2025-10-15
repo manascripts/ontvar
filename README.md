@@ -161,13 +161,13 @@ The pipeline generates outputs organized into case-level and cohort-level direct
 │   ├── SAMPLE1_sniffles.vcf.gz
 │   └── SAMPLE2_sniffles.vcf.gz
 ├── cutesv/
-│   ├── SAMPLE1_cutesv.vcf.gz
-│   └── SAMPLE2_cutesv.vcf.gz
+│   ├── SAMPLE1_cutesv.vcf
+│   └── SAMPLE2_cutesv.vcf
 ├── severus/
 │   ├── tumor_normal/
-│   │   └── SAMPLE1_tn_severus.vcf.gz
+│   │   └── SAMPLE1_tn_severus.vcf
 │   └── tumor_only/
-│       └── SAMPLE2_to_severus.vcf.gz
+│       └── SAMPLE2_to_severus.vcf
 ├── raw_calls_summary.json
 ├── raw_callers_plot_sv_counts_stacked.png
 ├── raw_callers_plot_sv_counts_callers.png
@@ -198,7 +198,7 @@ The pipeline generates outputs organized into case-level and cohort-level direct
 **Files**:
 ```
 03_caller_merged_filtered/
-├── SAMPLE1_filtered.vcf.gz
+├── SAMPLE1_filtered.vcf
 ├── SAMPLE1_filtered.tsv
 ├── SAMPLE1_filtered.annotated.tsv
 ├── filtered_summary.json
