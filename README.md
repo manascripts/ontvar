@@ -20,248 +20,118 @@
 
 ## Introduction
 
-**nf-core/ontvar** is a comprehensive structural variant calling, filtering, annotation and consensus set generation pipeline for ONT's long read sequencing data.
+**nf-core/ontvar** is a comprehensive structural variant (SV) calling, filtering, annotation and consensus generation pipeline for Oxford Nanopore Technologies (ONT) long-read sequencing data.
 
-<!-- TODO nf-core:
-   Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
-   major pipeline sections and the types of output it produces. You're giving an overview to someone new
-   to nf-core here, in 15-20 seconds. For an example, see https://github.com/nf-core/rnaseq/blob/master/README.md#introduction
--->
+### Key Features
 
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/guidelines/graphic_design/workflow_diagrams#examples for examples.   -->
-<!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
+- **Multi-caller SV detection**: Sniffles, cuteSV, and Severus for comprehensive variant discovery
+- **Case-control aware analysis**: Support for tumor-normal paired analysis and tumor-only with panel of normals
+- **Consensus calling**: Sample-level caller merging with configurable support thresholds
+- **Population frequency filtering**: Integration with gnomAD and custom population databases
+- **Comprehensive annotation**: AnnotSV provides gene-based and regulatory annotations
+- **Cohort-level analysis**: Multi-sample variant merging and analysis
+- **Interactive visualizations**: Detailed QC plots and summary statistics at each stage
 
 ## Workflow Overview
 
-```mermaid 
----
-config:
-  layout: elk
-  themeVariables:
-    background: white
----
-flowchart TB
-    INPUT_SAMPLE["Sample Sheet"] L_INPUT_SAMPLE_SPLIT_0@--> SPLIT["Split by Type"]
-    INPUT_ANNOT["AnnotSV Annotations"] L_INPUT_ANNOT_ANNOT_SETUP_0@--> ANNOT_SETUP["Annotations<br>Available?"]
-    SPLIT L_SPLIT_CASES_0@--> CASES["Case Samples"] & CONTROLS["Control Samples"]
-    CASES L_CASES_SNIFFLES_0@--> SNIFFLES["Sniffles"] & CUTESV["cuteSV"] & SEVERUS_CTRL["Severus<br>(with control)"] & SEVERUS_NO["Severus<br>(no control)"]
-    CONTROLS L_CONTROLS_SEVERUS_CTRL_0@--> SEVERUS_CTRL
-    SNIFFLES L_SNIFFLES_FMT1_0@--> FMT1["Format VCF Headers"]
-    CUTESV L_CUTESV_FMT2_0@--> FMT2["Format VCF Headers"]
-    SEVERUS_CTRL L_SEVERUS_CTRL_FMT3_0@--> FMT3["Format VCF Headers"]
-    SEVERUS_NO L_SEVERUS_NO_FMT3_0@--> FMT3
-    FMT1 L_FMT1_RAW_VCFS_0@--> RAW_VCFS["Individual Caller VCFs"]
-    FMT2 L_FMT2_RAW_VCFS_0@--> RAW_VCFS
-    FMT3 L_FMT3_RAW_VCFS_0@--> RAW_VCFS
-    RAW_VCFS L_RAW_VCFS_SUM_RAW_0@--> SUM_RAW["Summarize Raw Calls"] & JASMINE_SAMPLE["Jasmine: Merge Callers<br>(per sample)"]
-    SUM_RAW L_SUM_RAW_PLOT_RAW_0@--> PLOT_RAW["Plot: Raw Caller Counts"]
-    JASMINE_SAMPLE L_JASMINE_SAMPLE_FIX_HDR_0@--> FIX_HDR["Fix VCF Headers"]
-    FIX_HDR L_FIX_HDR_FILTER_CHR_0@--> FILTER_CHR["Filter Chromosomes"]
-    FILTER_CHR L_FILTER_CHR_SORT1_0@--> SORT1["Sort VCF"]
-    SORT1 --> SUPPORT_FILTER["Filter: ≥2 Caller Support"]
-    SUPPORT_FILTER L_SUPPORT_FILTER_SUM_CONSENSUS_0@--> SUM_CONSENSUS["Summarize Consensus Calls"] & SVDB_SAMPLE["Annotate: Population AF<br>(sample)"] & COLLECT["Sample VCFs"]
-    SUM_CONSENSUS L_SUM_CONSENSUS_PLOT_CONS_0@--> PLOT_CONS["Plot: Consensus Counts"]
-    SVDB_SAMPLE L_SVDB_SAMPLE_ANNOT_SAMPLE_RAW_0@--> ANNOT_SAMPLE_RAW["AnnotSV: FUNCTIONAL ANNOTATIONS<br>(sample: before AF filter)"] & AF_SAMPLE["Filter: Allele Frequency<br>(per sample)"]
-    AF_SAMPLE L_AF_SAMPLE_SUM_FILT_0@--> SUM_FILT["Summarize Filtered Calls"] & ANNOT_SAMPLE_FINAL["AnnotSV: FUNCTIONAL ANNOTATIONS <br>(sample: after AF FILTER)"]
-    SUM_FILT L_SUM_FILT_PLOT_FILT_0@--> PLOT_FILT["Plot: Filtered Counts"]
-    COLLECT L_COLLECT_JASMINE_COHORT_0@--> JASMINE_COHORT["Jasmine: Merge Samples<br>(cohort-wide)"]
-    JASMINE_COHORT L_JASMINE_COHORT_SVDB_COHORT_0@--> SVDB_COHORT["Annotate: Population AF<br>(cohort)"]
-    SVDB_COHORT L_SVDB_COHORT_ANNOT_COHORT_RAW_0@--> ANNOT_COHORT_RAW["AnnotSV: FUNCTIONAL ANNOTATIONS<br>(cohort: before AF filter)"] & SUM_COHORT_RAW["Summarize Cohort<br>(annotated)"] & AF_COHORT["Filter: Allele Frequency<br>(cohort)"]
-    SUM_COHORT_RAW L_SUM_COHORT_RAW_PLOT_COHORT_RAW_0@--> PLOT_COHORT_RAW["Plot: Cohort Annotated"]
-    AF_COHORT L_AF_COHORT_SUM_COHORT_FILT_0@--> SUM_COHORT_FILT["Summarize Cohort<br>(filtered)"] & ANNOT_COHORT_FINAL["AnnotSV: FUNCTIONAL ANNOTATIONS<br>(cohort: after AF filter)"]
-    SUM_COHORT_FILT L_SUM_COHORT_FILT_PLOT_COHORT_FILT_0@--> PLOT_COHORT_FILT["Plot: Cohort Filtered"]
-    ANNOT_SETUP L_ANNOT_SETUP_INSTALL_0@-- No --> INSTALL["Install AnnotSV data"]
-    ANNOT_SETUP L_ANNOT_SETUP_CHECK_TAR_0@-- Yes --> CHECK_TAR["tar.gz?"]
-    CHECK_TAR L_CHECK_TAR_UNTAR_0@-- Yes --> UNTAR["Extract Archive"]
-    CHECK_TAR L_CHECK_TAR_ANNOT_DB_0@-- No --> ANNOT_DB["AnnotSV data"]
-    INSTALL L_INSTALL_ANNOT_DB_0@--> ANNOT_DB
-    UNTAR L_UNTAR_ANNOT_DB_0@--> ANNOT_DB
-    ANNOT_DB L_ANNOT_DB_ANNOT_SAMPLE_RAW_0@--> ANNOT_SAMPLE_RAW & ANNOT_SAMPLE_FINAL & ANNOT_COHORT_RAW & ANNOT_COHORT_FINAL
-    ANNOT_SAMPLE_FINAL L_ANNOT_SAMPLE_FINAL_OUT_SAMPLE_0@--> OUT_SAMPLE["Sample-Level Results"]
-    ANNOT_COHORT_FINAL L_ANNOT_COHORT_FINAL_OUT_COHORT_0@--> OUT_COHORT["Cohort-Level Results"]
-    INPUT_REF["Reference Genome"]
-    INPUT_SAMPLE@{ shape: rounded}
-    SPLIT@{ shape: rounded}
-    INPUT_ANNOT@{ shape: rounded}
-    ANNOT_SETUP@{ shape: rounded}
-    CASES@{ shape: rounded}
-    CONTROLS@{ shape: rounded}
-    SNIFFLES@{ shape: rounded}
-    CUTESV@{ shape: rounded}
-    SEVERUS_CTRL@{ shape: rounded}
-    SEVERUS_NO@{ shape: rounded}
-    FMT1@{ shape: rounded}
-    FMT2@{ shape: rounded}
-    FMT3@{ shape: rounded}
-    RAW_VCFS@{ shape: rounded}
-    SUM_RAW@{ shape: rounded}
-    JASMINE_SAMPLE@{ shape: rounded}
-    PLOT_RAW@{ shape: rounded}
-    FIX_HDR@{ shape: rounded}
-    FILTER_CHR@{ shape: rounded}
-    SORT1@{ shape: rounded}
-    SUPPORT_FILTER@{ shape: rounded}
-    SUM_CONSENSUS@{ shape: rounded}
-    SVDB_SAMPLE@{ shape: rounded}
-    COLLECT@{ shape: rounded}
-    PLOT_CONS@{ shape: rounded}
-    ANNOT_SAMPLE_RAW@{ shape: rounded}
-    AF_SAMPLE@{ shape: rounded}
-    SUM_FILT@{ shape: rounded}
-    ANNOT_SAMPLE_FINAL@{ shape: rounded}
-    PLOT_FILT@{ shape: rounded}
-    JASMINE_COHORT@{ shape: rounded}
-    SVDB_COHORT@{ shape: rounded}
-    ANNOT_COHORT_RAW@{ shape: rounded}
-    SUM_COHORT_RAW@{ shape: rounded}
-    AF_COHORT@{ shape: rounded}
-    PLOT_COHORT_RAW@{ shape: rounded}
-    SUM_COHORT_FILT@{ shape: rounded}
-    ANNOT_COHORT_FINAL@{ shape: rounded}
-    PLOT_COHORT_FILT@{ shape: rounded}
-    INSTALL@{ shape: rounded}
-    CHECK_TAR@{ shape: rounded}
-    UNTAR@{ shape: rounded}
-    ANNOT_DB@{ shape: rounded}
-    OUT_SAMPLE@{ shape: rounded}
-    OUT_COHORT@{ shape: rounded}
-    INPUT_REF@{ shape: rounded}
-     INPUT_SAMPLE:::input
-     SPLIT:::decision
-     INPUT_ANNOT:::input
-     ANNOT_SETUP:::decision
-     SNIFFLES:::caller
-     CUTESV:::caller
-     SEVERUS_CTRL:::caller
-     SEVERUS_NO:::caller
-     FMT1:::process
-     FMT2:::process
-     FMT3:::process
-     SUM_RAW:::summary
-     JASMINE_SAMPLE:::process
-     PLOT_RAW:::output
-     FIX_HDR:::process
-     FILTER_CHR:::process
-     SORT1:::process
-     SUPPORT_FILTER:::filter
-     SUM_CONSENSUS:::summary
-     SVDB_SAMPLE:::process
-     PLOT_CONS:::output
-     ANNOT_SAMPLE_RAW:::process
-     AF_SAMPLE:::filter
-     SUM_FILT:::summary
-     ANNOT_SAMPLE_FINAL:::process
-     PLOT_FILT:::output
-     JASMINE_COHORT:::process
-     SVDB_COHORT:::process
-     ANNOT_COHORT_RAW:::process
-     SUM_COHORT_RAW:::summary
-     AF_COHORT:::filter
-     PLOT_COHORT_RAW:::output
-     SUM_COHORT_FILT:::summary
-     ANNOT_COHORT_FINAL:::process
-     PLOT_COHORT_FILT:::output
-     INSTALL:::process
-     CHECK_TAR:::decision
-     UNTAR:::process
-     OUT_SAMPLE:::output
-     OUT_COHORT:::output
-     INPUT_REF:::input
-    classDef input fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef caller fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef process fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-    classDef filter fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef summary fill:#fff8e1,stroke:#f57f17,stroke-width:2px
-    classDef output fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
-    classDef decision fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    L_INPUT_SAMPLE_SPLIT_0@{ animation: fast } 
-    L_INPUT_ANNOT_ANNOT_SETUP_0@{ animation: fast } 
-    L_SPLIT_CASES_0@{ animation: fast } 
-    L_SPLIT_CONTROLS_0@{ animation: fast } 
-    L_CASES_SNIFFLES_0@{ animation: fast } 
-    L_CASES_CUTESV_0@{ animation: fast } 
-    L_CASES_SEVERUS_CTRL_0@{ animation: fast } 
-    L_CASES_SEVERUS_NO_0@{ animation: fast } 
-    L_CONTROLS_SEVERUS_CTRL_0@{ animation: fast } 
-    L_SNIFFLES_FMT1_0@{ animation: fast } 
-    L_CUTESV_FMT2_0@{ animation: fast } 
-    L_SEVERUS_CTRL_FMT3_0@{ animation: fast } 
-    L_SEVERUS_NO_FMT3_0@{ animation: fast } 
-    L_FMT1_RAW_VCFS_0@{ animation: fast } 
-    L_FMT2_RAW_VCFS_0@{ animation: fast } 
-    L_FMT3_RAW_VCFS_0@{ animation: fast } 
-    L_RAW_VCFS_SUM_RAW_0@{ animation: fast } 
-    L_RAW_VCFS_JASMINE_SAMPLE_0@{ animation: fast } 
-    L_SUM_RAW_PLOT_RAW_0@{ animation: fast } 
-    L_JASMINE_SAMPLE_FIX_HDR_0@{ animation: fast } 
-    L_FIX_HDR_FILTER_CHR_0@{ animation: fast } 
-    L_FILTER_CHR_SORT1_0@{ animation: fast } 
-    L_SUPPORT_FILTER_SUM_CONSENSUS_0@{ animation: none } 
-    L_SUPPORT_FILTER_SVDB_SAMPLE_0@{ animation: fast } 
-    L_SUPPORT_FILTER_COLLECT_0@{ animation: fast } 
-    L_SUM_CONSENSUS_PLOT_CONS_0@{ animation: none } 
-    L_SVDB_SAMPLE_ANNOT_SAMPLE_RAW_0@{ animation: fast } 
-    L_SVDB_SAMPLE_AF_SAMPLE_0@{ animation: fast } 
-    L_AF_SAMPLE_SUM_FILT_0@{ animation: fast } 
-    L_AF_SAMPLE_ANNOT_SAMPLE_FINAL_0@{ animation: fast } 
-    L_SUM_FILT_PLOT_FILT_0@{ animation: fast } 
-    L_COLLECT_JASMINE_COHORT_0@{ animation: fast } 
-    L_JASMINE_COHORT_SVDB_COHORT_0@{ animation: fast } 
-    L_SVDB_COHORT_ANNOT_COHORT_RAW_0@{ animation: fast } 
-    L_SVDB_COHORT_SUM_COHORT_RAW_0@{ animation: fast } 
-    L_SVDB_COHORT_AF_COHORT_0@{ animation: fast } 
-    L_SUM_COHORT_RAW_PLOT_COHORT_RAW_0@{ animation: fast } 
-    L_AF_COHORT_SUM_COHORT_FILT_0@{ animation: fast } 
-    L_AF_COHORT_ANNOT_COHORT_FINAL_0@{ animation: fast } 
-    L_SUM_COHORT_FILT_PLOT_COHORT_FILT_0@{ animation: fast } 
-    L_ANNOT_SETUP_INSTALL_0@{ animation: slow } 
-    L_ANNOT_SETUP_CHECK_TAR_0@{ animation: slow } 
-    L_CHECK_TAR_UNTAR_0@{ animation: fast } 
-    L_CHECK_TAR_ANNOT_DB_0@{ animation: fast } 
-    L_INSTALL_ANNOT_DB_0@{ animation: fast } 
-    L_UNTAR_ANNOT_DB_0@{ animation: fast } 
-    L_ANNOT_DB_ANNOT_SAMPLE_RAW_0@{ animation: fast } 
-    L_ANNOT_DB_ANNOT_SAMPLE_FINAL_0@{ animation: fast } 
-    L_ANNOT_DB_ANNOT_COHORT_RAW_0@{ animation: fast } 
-    L_ANNOT_DB_ANNOT_COHORT_FINAL_0@{ animation: fast } 
-    L_ANNOT_SAMPLE_FINAL_OUT_SAMPLE_0@{ animation: fast } 
-    L_ANNOT_COHORT_FINAL_OUT_COHORT_0@{ animation: fast }
-
-
-```
+![ontvar Workflow](docs/ONTVAR-2025-10-15-092011.svg)
 
 ## Usage
 
 > [!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline) with `-profile test` before running the workflow on actual data.
 
-<!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
-     Explain what rows and columns represent. For instance (please edit as appropriate):
+The pipeline consists of the following major steps:
+
+1. **SV Calling**: Run Sniffles, cuteSV, and Severus callers on input samples
+2. **Sample Consensus**: Merge caller results per sample using Jasmine (caller support filter)
+3. **Population Annotation**: Add allele frequency information from gnomad and long-read sequencing based healthy population databases (using SVDB)
+4. **Sample Filtering**: Remove common variants based on population frequencies
+5. **Sample Annotation**: Comprehensive AnnotSV annotation of sample variants
+6. **Cohort Merging**: Create cohort-wide merged callset using Jasmine
+7. **Cohort Filtering**: Apply population frequency filters at cohort level
+8. **Final Annotation**: AnnotSV annotation of final cohort callset
+9. **QC & Visualization**: Generate summary statistics and plots at each stage
+
+### Quick Start
 
 First, prepare a samplesheet with your input data that looks as follows:
 
-`samplesheet.csv`:
+**samplesheet.csv**:
 
 ```csv
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
+sample,fastq,bam,fasta,control
+CASE_01,/path/to/case01.fastq.gz,/path/to/case01.bam,/path/to/case01.fasta,false
+CASE_02,/path/to/case02.fastq.gz,/path/to/case02.bam,,false
+CONTROL_01,/path/to/control01.fastq.gz,/path/to/control01.bam,/path/to/control01.fasta,true
 ```
 
-Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
+### Samplesheet Format
 
--->
+Each row represents a sample with the following columns:
+
+| Column      | Required | Description                                                        |
+|-------------|----------|--------------------------------------------------------------------|
+| `group_id`  | Yes      | Sample group used for pairing identifier                           |
+| `sample_id` | Yes      | Unique ID for each sample                                          |
+| `sample_type`| Yes     | String indicating if sample is a `case` or `control`               |
+| `bam_path`  | Yes*     | Path to aligned BAM file                                           |
 
 Now, you can run the pipeline using:
 
-<!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
+```bash
+nextflow run nf-core/ontvar \
+   -profile docker \
+   --input samplesheet.csv \
+   --outdir results \
+   --reference reference.fa
+```
+
+### Required Parameters
+
+| Parameter | Description                                           | Example                    |
+|-----------|-------------------------------------------------------|----------------------------|
+| `--input` | Path to comma-separated sample sheet file             | `path/to/samplesheet.csv`  |
+| `--outdir`| Output directory path                                 | `path/to/results`          |
+| `--reference` | Reference genome FASTA file                       | `path/to/hg38.fa`          |
+
+
+NOTE: It is recommemned to provide Path to AnnotSV annotation directory as the `--annotsv_annotations` after the first run, to avoid re-downloading them for future runs.
+
+### Customizing Pipeline Parameters
+
+The pipeline offers extensive customization options for each step of the analysis. All parameters can be adjusted to fit your specific needs:
+
+**SV Caller Parameters**: Fine-tune settings for Sniffles, cuteSV, and Severus including minimum mapping quality, SV size thresholds, read support requirements, and more.
+
+**Consensus & Filtering Parameters**: Adjust caller support thresholds (e.g., require 2 or 3 callers), population frequency cutoffs, overlap ratios for merging, and distance thresholds.
+
+**Annotation Parameters**: Configure AnnotSV annotation databases, genome builds, output formats, and annotation detail levels.
+
+**Database Parameters**: Specify custom SVDB population databases, panel of normals files, and AnnotSV annotation paths.
+
+These are configurable via command-line flags or in the `nextflow.config` file.
+
+## Advanced Usage
+
+### Custom Filtering Thresholds
+
+Adjust caller support and population frequency thresholds:
 
 ```bash
 nextflow run nf-core/ontvar \
-   -profile <docker/singularity/.../institute> \
+   -profile docker \
    --input samplesheet.csv \
-   --outdir <OUTDIR>
+   --outdir results \
+   --reference reference.fa \
+   --min_caller_support 3 \        # Require 3/3 callers
+   --max_gnomad_af 0.001 \         # Change population frequency cutoff
+   --max_needlr_af 0.001
 ```
+
+### Chromosome Filtering
+
+By default, the pipeline retains only main contigs (CHR1-22,X,Y,M). This is controlled in the `FILTER_CHR` module.
 
 > [!WARNING]
 > Please provide pipeline parameters via the CLI or Nextflow `-params-file` option. Custom config files including those provided by the `-c` Nextflow option can be used to provide any configuration _**except for parameters**_; see [docs](https://nf-co.re/docs/usage/getting_started/configuration#custom-configuration-files).
@@ -274,13 +144,138 @@ To see the results of an example test run with a full size dataset refer to the 
 For more details about the output files and reports, please refer to the
 [output documentation](https://nf-co.re/ontvar/output).
 
+The pipeline generates outputs organized into case-level and cohort-level directories:
+
+### Case-Level Outputs (`results/case/`)
+
+#### 1. Raw Calls (`01_raw_calls/`)
+- Individual caller VCFs for each sample
+- Subdirectories: `sniffles/`, `cutesv/`, `severus/`
+- Summary JSON and count plots
+
+**Files**:
+```
+01_raw_calls/
+├── sniffles/
+│   ├── SAMPLE1_sniffles.vcf.gz
+│   └── SAMPLE2_sniffles.vcf.gz
+├── cutesv/
+│   ├── SAMPLE1_cutesv.vcf.gz
+│   └── SAMPLE2_cutesv.vcf.gz
+├── severus/
+│   ├── tumor_normal/
+│   │   └── SAMPLE1_tn_severus.vcf.gz
+│   └── tumor_only/
+│       └── SAMPLE2_to_severus.vcf.gz
+├── raw_calls_summary.json
+├── raw_callers_plot_sv_counts_stacked.png
+├── raw_callers_plot_sv_counts_callers.png
+└── raw_callers_plot_sv_counts.png
+```
+
+#### 2. Caller Merged (`02_caller_merged/`)
+- Sample-level consensus VCFs (filtereed by caller support)
+- AnnotSV annotations (pre-filtering)
+- Summary statistics and plots
+
+**Files**:
+```
+02_caller_merged/
+├── SAMPLE1.vcf
+├── SAMPLE1.tsv                    # AnnotSV full annotation
+├── SAMPLE1.annotated.tsv          # AnnotSV gene-level
+├── caller_merged_summary.json
+├── consensus_plot_sv_counts_stacked.png
+└── consensus_plot_sv_counts.png
+```
+
+#### 3. Caller Merged Filtered (`03_caller_merged_filtered/`)
+- Population frequency filtered VCFs
+- Final AnnotSV annotations
+- Summary statistics and plots
+
+**Files**:
+```
+03_caller_merged_filtered/
+├── SAMPLE1_filtered.vcf.gz
+├── SAMPLE1_filtered.tsv
+├── SAMPLE1_filtered.annotated.tsv
+├── filtered_summary.json
+├── filtered_plot_sv_counts_stacked.png
+└── filtered_plot_sv_counts.png
+```
+
+### Cohort-Level Outputs (`results/cohort/`)
+
+**Files**:
+```
+cohort/
+├── cohort_annotated.vcf                    # AnnotSV (pre-AF filtering)
+├── cohort_annotated.tsv                    # AnnotSV (pre-AF filtering)
+├── cohort_filtered.vcf                     # AnnotSV (post-AF filtering)
+├── cohort_filtered.tsv                     # AnnotSV (post-AF filtering)
+├── cohort_annotated_summary.json
+├── cohort_annotated_sv_counts.png
+├── cohort_filtered_summary.json
+└── cohort_filtered_sv_counts.png
+```
+
+### MultiQC Report
+
+A comprehensive HTML report combining all QC metrics:
+
+```
+results/multiqc/multiqc_report.html
+```
+
+### Summary JSON Format
+
+Each `*_summary.json` file contains SV counts by:
+- Sample
+- Caller
+- SV type (DEL, INS, DUP, INV, BND, etc.)
+
+Example structure:
+```json
+{
+  "analysis_type": "multi_sample",
+  "samples": {
+    "SAMPLE1": {
+      "callers": {
+        "sniffles": {
+          "sv_types": {
+            "DEL": {"count": 1234},
+            "INS": {"count": 567}
+          }
+        }
+      },
+      "combined_stats": {
+        "sv_types": {
+          "DEL": {"count": 1500}
+        }
+      }
+    }
+  }
+}
+```
+
 ## Credits
 
-nf-core/ontvar was originally written by Manas Sehgal.
+nf-core/ontvar is written and maintained by Manas Sehgal.
 
-We thank the following people for their extensive assistance in the development of this pipeline:
 
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
+### Tools Used
+
+This pipeline integrates the following tools:
+
+- [Sniffles2](https://github.com/fritzsedlazeck/Sniffles) - SV calling from long reads
+- [cuteSV](https://github.com/tjiangHIT/cuteSV) - Long-read SV detection
+- [Severus](https://github.com/KolmogorovLab/Severus) - Somatic SV calling
+- [Jasmine](https://github.com/mkirsche/Jasmine) - SV merging and comparison
+- [AnnotSV](https://github.com/lgmgeo/AnnotSV) - Structural variant annotation
+- [SVDB](https://github.com/J35P312/SVDB) - Structural variant population frequency annotation
+- [BCFtools](https://github.com/samtools/bcftools) - VCF manipulation
+- [MultiQC](https://multiqc.info/) - Quality control reporting
 
 ## Contributions and Support
 
