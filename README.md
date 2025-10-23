@@ -60,10 +60,11 @@ First, prepare a samplesheet with your input data that looks as follows:
 **samplesheet.csv**:
 
 ```csv
-sample,fastq,bam,fasta,control
-CASE_01,/path/to/case01.fastq.gz,/path/to/case01.bam,/path/to/case01.fasta,false
-CASE_02,/path/to/case02.fastq.gz,/path/to/case02.bam,,false
-CONTROL_01,/path/to/control01.fastq.gz,/path/to/control01.bam,/path/to/control01.fasta,true
+group_id,sample_id,sample_type,bam_path
+01,CASE_01,case,/path/to/case01.bam
+01,CONTROL_01,control,/path/to/control01.bam
+02,CASE_02,case,/path/to/case02.bam
+
 ```
 
 ### Samplesheet Format
@@ -76,6 +77,14 @@ Each row represents a sample with the following columns:
 | `sample_id` | Yes      | Unique ID for each sample                                          |
 | `sample_type`| Yes     | String indicating if sample is a `case` or `control`               |
 | `bam_path`  | Yes      | Path to aligned BAM file                                           |
+
+
+**Notes:**
+- Samples with the same `group_id` are treated as paired (e.g., tumor-normal pairs)
+- `sample_type` must be either `case` or `control`
+- BAM files must be aligned to the reference genome specified with `--fasta`
+- BAM files should be coordinate-sorted and indexed (.bai file should exist)
+
 
 Now, you can run the pipeline using:
 
@@ -93,11 +102,11 @@ nextflow run nf-core/ontvar \
 |-----------|-------------------------------------------------------|----------------------------|
 | `--input` | Path to comma-separated sample sheet file             | `path/to/samplesheet.csv`  |
 | `--outdir`| Output directory path                                 | `path/to/outdir`           |
-| `--reference` | Reference genome FASTA file                       | `path/to/hg38.fa`          |
+| `--reference` | Reference genome FASTA file                       | `path/to/reference.fa`     |
 
 
 > [!NOTE] 
-> It is recommemned to provide Path to AnnotSV annotation directory as the `--annotsv_annotations` after the first run, to avoid re-downloading them for future runs.
+> It is recommemded to provide Path to AnnotSV annotation directory as the `--annotsv_annotations` after the first run, to avoid re-downloading them for future runs.
 
 ### Customizing Pipeline Parameters
 
