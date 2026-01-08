@@ -90,6 +90,35 @@
                 }
             }
         },
+        "alignment_options": {
+            "title": "Alignment options",
+            "type": "object",
+            "fa_icon": "fas fa-align-center",
+            "description": "Parameters for FASTQ concatenation and minimap2 alignment.",
+            "properties": {
+                "minimap2_preset": {
+                    "type": "string",
+                    "default": "map-ont",
+                    "description": "Minimap2 alignment preset.",
+                    "fa_icon": "fas fa-cog",
+                    "enum": ["map-ont", "map-pb", "map-hifi", "lr:hq"],
+                    "help_text": "Preset for minimap2 alignment. Use 'map-ont' for Oxford Nanopore, 'map-pb' for PacBio CLR, 'map-hifi' for PacBio HiFi."
+                },
+                "minimap2_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to minimap2.",
+                    "fa_icon": "fas fa-terminal",
+                    "help_text": "Additional minimap2 arguments. These will be added to the preset arguments."
+                },
+                "cat_fastq_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to CAT_FASTQ.",
+                    "fa_icon": "fas fa-terminal"
+                }
+            }
+        },
         "file_paths": {
             "title": "File paths",
             "type": "object",
@@ -762,6 +791,9 @@
         },
         {
             "$ref": "#/$defs/reference_genome_options"
+        },
+        {
+        "$ref": "#/$defs/alignment_options"
         },
         {
             "$ref": "#/$defs/general_options"

@@ -53,36 +53,43 @@ The pipeline consists of the following major steps:
 8. **Final Annotation**: AnnotSV annotation of final cohort callset
 9. **QC & Visualization**: Generate summary statistics and plots at each stage
 
-### Quick Start
-
-First, prepare a samplesheet with your input data that looks as follows:
-
-**samplesheet.csv**:
-
-```csv
-group_id,sample_id,sample_type,bam_path
-01,CASE_01,case,/path/to/case01.bam
-01,CONTROL_01,control,/path/to/control01.bam
-02,CASE_02,case,/path/to/case02.bam
-
-```
-
 ### Samplesheet Format
 
 Each row represents a sample with the following columns:
 
-| Column      | Required | Description                                                        |
-|-------------|----------|--------------------------------------------------------------------|
-| `group_id`  | Yes      | Sample group used for pairing identifier                           |
-| `sample_id` | Yes      | Unique ID for each sample                                          |
-| `sample_type`| Yes     | String indicating if sample is a `case` or `control`               |
-| `bam_path`  | Yes      | Path to aligned BAM file                                           |
+| Column       | Required | Description                                                        |
+|--------------|----------|--------------------------------------------------------------------|
+| `group_id`   | Yes      | Sample group identifier for pairing                                |
+| `sample_id`  | Yes      | Unique ID for each sample                                          |
+| `sample_type`| Yes      | String indicating if sample is a `case` or `control`               |
+| `input_type` | Yes      | Input data type: `fastq` or `bam`                                  |
+| `input_path` | Yes      | Path to FASTQ file/directory or aligned BAM file                   |
+
+**Input Types:**
+
+- **FASTQ (`input_type: fastq`)**:
+  - Can be a single FASTQ file (`.fastq`, `.fq`, `.fastq.gz`, `.fq.gz`)
+  - Can be a directory containing multiple FASTQ files (will be concatenated)
+  - Requires `--reference` parameter for alignment with minimap2
+  
+- **BAM (`input_type: bam`)**:
+  - Must be aligned to the same reference genome specified with `--reference`
+  - Must be coordinate-sorted and indexed (`.bam.bai` file should exist)
+  - Skips alignment step
+
+**Example samplesheet:**
+
+```csv
+group_id,sample_id,sample_type,input_type,input_path
+group1,sample1,case,fastq,/path/to/fastq_dir/
+group1,control1,control,bam,/path/to/control.bam
+group2,sample2,case,fastq,/path/to/reads.fastq.gz
+```
 
 
 **Notes:**
 - Samples with the same `group_id` are treated as paired (e.g., tumor-normal pairs)
 - `sample_type` must be either `case` or `control`
-- BAM files must be aligned to the reference genome specified with `--fasta`
 - BAM files should be coordinate-sorted and indexed (.bai file should exist)
 
 
@@ -104,9 +111,73 @@ nextflow run nf-core/ontvar \
 | `--outdir`| Output directory path                                 | `path/to/outdir`           |
 | `--reference` | Reference genome FASTA file                       | `path/to/reference.fa`     |
 
+### AnnotSV Annotation Resources
 
-> [!NOTE] 
-> It is recommemded to provide Path to AnnotSV annotation directory as the `--annotsv_annotations` after the first run, to avoid re-downloading them for future runs.
+AnnotSV requires annotation resources to function. The pipeline can automatically download these on first run, but it's recommended to download them once and reuse for subsequent runs to save time.
+
+#### Automatic Download (First Run)
+
+On the first run, AnnotSV will automatically download and install the annotation databases. This can take significant time (30+ minutes depending on internet speed and genome build).
+
+```bash
+nextflow run nf-core/ontvar \
+   -profile docker \
+   --input samplesheet.csv \
+   --outdir results \
+   --reference reference.fa
+   # AnnotSV will auto-download annotations to default location
+```
+
+#### Reusing Annotation Resources (Recommended)
+
+After the first run, AnnotSV annotations are cached in the output directory. To reuse them for subsequent runs:
+
+```bash
+nextflow run nf-core/ontvar \
+   -profile docker \
+   --input samplesheet.csv \
+   --outdir results \
+   --reference reference.fa \
+   --annotsv_annotations /path/to/annotation/resources
+```
+
+#### Annotation Resource Location
+
+**Default location** (after first run):
+```
+results/AnnotSV_annotations/
+```
+
+**Custom location**:
+You can specify a custom annotation directory with `--annotsv_annotations`. 
+
+#### Pre-downloaded Resources
+
+If you have pre-downloaded AnnotSV resources from another source, you can point to them directly:
+
+```bash
+nextflow run nf-core/ontvar \
+   -profile docker \
+   --input samplesheet.csv \
+   --outdir results \
+   --reference reference.fa \
+   --annotsv_annotations /path/to/your/AnnotSV/annotations
+```
+
+
+#### Supported Genome Builds
+
+The pipeline supports the following genome builds for AnnotSV annotation:
+
+- `hg38` (GRCh38) - Default
+- `hg37` (GRCh37)
+- `mm10` (GRCm38)
+- `mm9` (GRCm37)
+
+Specify the build with:
+```bash
+--genome_build GRCh37
+```
 
 ### Customizing Pipeline Parameters
 
@@ -153,6 +224,29 @@ nextflow run nf-core/ontvar \
 To see the results of an example test run with a full size dataset refer to the [results](https://nf-co.re/ontvar/results) tab on the nf-core website pipeline page.
 For more details about the output files and reports, please refer to the
 [output documentation](https://nf-co.re/ontvar/output).
+
+### Preprocessing Outputs (`results/alignment/`)
+
+#### Alignment (`alignment/`)
+Generated only when FASTQ inputs are provided. BAM inputs skip this step.
+
+**Files**:
+```
+alignment/
+├── sample1/
+│   ├── sample1.bam
+│   └── sample1.bam.bai
+├── sample2/
+│   ├── sample2.bam
+│   └── sample2.bam.bai
+└── ...
+```
+
+**Notes**:
+- Uses minimap2 with preset `lr:hq` (Default preset used by Dorado aligner for ONT reads)
+- BAM files are coordinate-sorted and indexed automatically
+- For mixed inputs, FASTQ samples are aligned here and BAM samples skip to case-level analysis
+- Concatenated FASTQ files (from `cat_fastq`) are not published by default
 
 The pipeline generates outputs organized into case-level and cohort-level directories:
 
@@ -278,6 +372,7 @@ nf-core/ontvar is written and maintained by Manas Sehgal.
 
 This pipeline integrates the following tools:
 
+- [minimap2](https://github.com/lh3/minimap2) - Sequence alignment
 - [Sniffles2](https://github.com/fritzsedlazeck/Sniffles) - SV calling from long reads
 - [cuteSV](https://github.com/tjiangHIT/cuteSV) - Long-read SV detection
 - [Severus](https://github.com/KolmogorovLab/Severus) - Somatic SV calling

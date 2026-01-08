@@ -5,32 +5,36 @@
     "description": "Schema for the file provided with params.input",
     "type": "array",
     "items": {
-        "type": "object",
-        "properties": {
-            "group_id": {
-                "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "Group ID must be provided and cannot contain spaces",
-                "meta": ["id"]
-            },
-            "sample_id": {
-                "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "Sample ID must be provided and cannot contain spaces"
-            },
-            "sample_type": {
-                "type": "string",
-                "enum": ["case", "control"],
-                "errorMessage": "Sample type must be either 'case' or 'control'"
-            },
-            "bam_path": {
-                "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.bam$",
-                "errorMessage": "BAM file path must be provided, cannot contain spaces and must have extension '.bam'"
-            }
+    "type": "object",
+    "properties": {
+        "group_id": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "errorMessage": "Group ID must be provided and cannot contain spaces",
+            "meta": ["id"]
         },
-        "required": ["group_id", "sample_id", "sample_type", "bam_path"]
-    }
+        "sample_id": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "errorMessage": "Sample ID must be provided and cannot contain spaces"
+        },
+        "sample_type": {
+            "type": "string",
+            "enum": ["case", "control"],
+            "errorMessage": "Sample type must be either 'case' or 'control'"
+        },
+        "input_type": {
+            "type": "string",
+            "enum": ["fastq", "bam"],
+            "errorMessage": "Input type must be either 'fastq' or 'bam'"
+        },
+        "input_path": {
+            "type": "string",
+            "format": "string",
+            "pattern": "^\\S+$",
+            "errorMessage": "Path to FASTQ file/directory or BAM file must be provided and cannot contain spaces"
+        }
+    },
+    "required": ["group_id", "sample_id", "sample_type", "input_type", "input_path"]
+  }
 }

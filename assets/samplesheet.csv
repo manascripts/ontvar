@@ -1,3 +1,5 @@
-sample,fastq_1,fastq_2
-SAMPLE_PAIRED_END,/path/to/fastq/files/AEG588A1_S1_L002_R1_001.fastq.gz,/path/to/fastq/files/AEG588A1_S1_L002_R2_001.fastq.gz
-SAMPLE_SINGLE_END,/path/to/fastq/files/AEG588A4_S4_L003_R1_001.fastq.gz,
+group_id,sample_id,sample_type,input_type,input_path
+group1,sample1,case,fastq,/path/to/fastq_dir/
+group1,control1,control,bam,/path/to/control.bam
+group2,sample2,case,bam,/path/to/sample2.bam
+group3,sample3,case,fastq,/path/to/sample3.fastq.gz
