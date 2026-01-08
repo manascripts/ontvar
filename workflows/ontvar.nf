@@ -8,6 +8,8 @@ include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_ontvar_pipeline'
+include { CAT_FASTQ              } from '../modules/nf-core/cat/fastq/main'
+include { MINIMAP2_ALIGN         } from '../modules/nf-core/minimap2/align/main'
 include { SNIFFLES } from '../modules/nf-core/sniffles/main'
 include { CUTESV   } from '../modules/nf-core/cutesv/main'
 include { SEVERUS as SEVERUS_WITH_CONTROL } from '../modules/nf-core/severus/main'
@@ -63,23 +65,95 @@ workflow ONTVAR {
     ch_multiqc_files = Channel.empty()
 
     ch_sample_info = ch_samplesheet
-    // ch_sample_info now contains: [group_id, sample_id, sample_type, bam_path]
-    //                               [   0   ,    1    ,     2     ,    3      ]
+    // ch_sample_info now contains: [group_id, sample_id, sample_type, input_type, input_path]
+    //                               [   0   ,    1    ,     2     ,    3      ,     4     ]
+    
+    // Separate by input type
+    fastq_samples = ch_sample_info.filter { it[3] == 'fastq' }
+    bam_samples = ch_sample_info.filter { it[3] == 'bam' }
 
-    cases = ch_sample_info
-        .filter { it[2] == 'case' }      // sample_type is index 2
-    controls = ch_sample_info
-        .filter { it[2] == 'control' }   // sample_type is index 2
-    controls_by_match = controls
-        .map { c -> tuple(c[0], c[3]) }  // [group_id, bam_path]
-
-    sv_input = cases
-        .map { c -> tuple(c[0], c[0], c[3]) }  // map to [group_id, group_id, bam_path] - using group_id as sample name
-        .join(controls_by_match, remainder: true)  // join on group_id
+    // ──────────────────────────────────────────────────────────────────────
+    // FASTQ CONCATENATION (if multiple files per sample)
+    // ──────────────────────────────────────────────────────────────────────
+    // Process directory inputs - collect FASTQ files
+    fastq_samples_dir = fastq_samples
+        .filter { it[4] && file(it[4]).isDirectory() }
         .map { it ->
-            def group_id = it[0]  // Use group_id as sample identifier
-            def case_bam = it[2]
-            def control_bam = it[3]  // control_bam comes from join
+            def group_id = it[0]
+            def sample_id = it[1]
+            def fastq_path = it[4]
+            def pattern = "${fastq_path}/*.{fastq,fq,fastq.gz,fq.gz}"
+            def fastqs = file(pattern)
+            tuple([id: "${group_id}", sample: sample_id], fastqs)
+        }
+    
+    // Process single file inputs
+    fastq_samples_file = fastq_samples
+        .filter { it[4] && !file(it[4]).isDirectory() }
+        .map { it ->
+            def group_id = it[0]
+            def sample_id = it[1]
+            def fastq_path = it[4]
+            tuple([id: "${group_id}", sample: sample_id], file(fastq_path))
+        }
+
+    // Concatenate FASTQs from directories
+    CAT_FASTQ(fastq_samples_dir)
+
+    // Merge concatenated and single-file FASTQs for minimap2
+    minimap2_input = CAT_FASTQ.out.reads
+        .mix(fastq_samples_file)
+    
+    // ──────────────────────────────────────────────────────────────────────
+    // ALIGNMENT (minimap2 for long-read sequencing)
+    // ──────────────────────────────────────────────────────────────────────
+
+    MINIMAP2_ALIGN(
+        minimap2_input,                                                          // Input 1: [meta, reads]
+        Channel.value(tuple([id: "reference"], file(params.reference))),        // Input 2: [meta2, reference]
+        Channel.value(true),                                                     // Input 3: bam_format (true for BAM output)
+        Channel.value('bai'),                                                    // Input 4: bam_index_extension ('bai' or 'csi')
+        Channel.value(false),                                                    // Input 5: cigar_paf_format (false, not needed for BAM)
+        Channel.value(true) 
+    )
+
+    // Merge aligned and original BAMs with sample_id as key
+    aligned_bams = MINIMAP2_ALIGN.out.bam
+        .map { meta, bam ->
+            def sample_id = meta.id
+            tuple(sample_id, bam)
+        }
+    
+    original_bams = bam_samples
+        .map { it ->
+            def sample_id = it[1]  // sample_id is index 1
+            def bam_path = it[4]
+            tuple(sample_id, file(bam_path))
+        }
+
+    // Merge aligned and original BAMs (keyed by sample_id)
+    all_bams = aligned_bams.mix(original_bams)
+
+    // Map cases and controls with sample_id, then join
+    cases_with_bams = ch_sample_info
+        .filter { it[2] == 'case' }
+        .map { it -> tuple(it[1], it[0]) }  // [sample_id, group_id]
+        .join(all_bams, by: 0)               // [sample_id, group_id, bam]
+        .map { group_id, bam ->
+            tuple(group_id, bam)             // [group_id, bam]
+        }
+
+    controls_with_bams = ch_sample_info
+        .filter { it[2] == 'control' }
+        .map { it -> tuple(it[1], it[0]) }  // [sample_id, group_id]
+        .join(all_bams, by: 0)               // [sample_id, group_id, bam]
+        .map { group_id, bam ->
+            tuple(group_id, bam)             // [group_id, bam]
+        }
+
+    sv_input = cases_with_bams
+        .join(controls_with_bams, by: 0, remainder: true)
+        .map { group_id, case_bam, control_bam ->
             tuple(group_id, case_bam, control_bam ?: null)
         }
 
@@ -120,14 +194,14 @@ workflow ONTVAR {
             def group_id = it[0]
             def case_bam = it[1]
             def control_bam = it[2]
-            tuple([id: group_id, sample: group_id, has_control: true, control_bam: control_bam], case_bam, file("${case_bam}.bai"), control_bam, file("${control_bam}.bai"), [])
+            tuple([id: "${group_id}", sample: "${group_id}", has_control: true, control_bam: control_bam], case_bam, file("${case_bam}.bai"), control_bam, file("${control_bam}.bai"), [])
         }
 
     severus_no_control_input = sv_input.filter { !it[2] }
         .map { it ->
             def group_id = it[0]
             def case_bam = it[1]
-            tuple([id: group_id, sample: group_id, has_control: false], case_bam, file("${case_bam}.bai"), [], [], [])
+            tuple([id: "${group_id}", sample: "${group_id}", has_control: false], case_bam, file("${case_bam}.bai"), [], [], [])
         }
 
     SEVERUS_WITH_CONTROL(
@@ -522,6 +596,7 @@ workflow ONTVAR {
     // Collate and save software versions
     // ──────────────────────────────────────────────────────────────────────
 
+    ch_versions = ch_versions.mix(MINIMAP2_ALIGN.out.versions)
     ch_versions = ch_versions.mix(SNIFFLES.out.versions)
     ch_versions = ch_versions.mix(CUTESV.out.versions)
     ch_versions = ch_versions.mix(SEVERUS_WITH_CONTROL.out.versions)
