@@ -10,8 +10,7 @@
         "group_id": {
             "type": "string",
             "pattern": "^\\S+$",
-            "errorMessage": "Group ID must be provided and cannot contain spaces",
-            "meta": ["id"]
+            "errorMessage": "Group ID must be provided and cannot contain spaces"
         },
         "sample_id": {
             "type": "string",

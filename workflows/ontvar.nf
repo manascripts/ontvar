@@ -65,8 +65,8 @@ workflow ONTVAR {
     ch_multiqc_files = Channel.empty()
 
     ch_sample_info = ch_samplesheet
-    // ch_sample_info now contains: [group_id, sample_id, sample_type, input_type, input_path]
-    //                               [   0   ,    1    ,     2     ,    3      ,     4     ]
+    // ch_sample_info contains: [group_id, sample_id, sample_type, input_type, input_path]
+    //                          [   0    ,    1     ,     2      ,    3      ,     4     ]
     
     // Separate by input type
     fastq_samples = ch_sample_info.filter { it[3] == 'fastq' }
@@ -139,7 +139,7 @@ workflow ONTVAR {
         .filter { it[2] == 'case' }
         .map { it -> tuple(it[1], it[0]) }  // [sample_id, group_id]
         .join(all_bams, by: 0)               // [sample_id, group_id, bam]
-        .map { group_id, bam ->
+        .map { sample_id, group_id, bam ->
             tuple(group_id, bam)             // [group_id, bam]
         }
 
@@ -147,7 +147,7 @@ workflow ONTVAR {
         .filter { it[2] == 'control' }
         .map { it -> tuple(it[1], it[0]) }  // [sample_id, group_id]
         .join(all_bams, by: 0)               // [sample_id, group_id, bam]
-        .map { group_id, bam ->
+        .map { sample_id, group_id, bam ->
             tuple(group_id, bam)             // [group_id, bam]
         }
 
