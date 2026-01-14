@@ -34,7 +34,7 @@
 
 ## Workflow Overview
 
-![ontvar Workflow](docs/ONTVAR-2025-10-15-092011.svg)
+![ontvar Workflow](docs/ontvar.pdf)
 
 ## Usage
 
