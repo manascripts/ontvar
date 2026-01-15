@@ -20,7 +20,7 @@
 
 ## Introduction
 
-**nf-core/ontvar** is a comprehensive structural variant (SV) calling, filtering, annotation and consensus generation pipeline for Oxford Nanopore Technologies (ONT) long-read sequencing data.
+**nf-core/ontvar** is a comprehensive somatic structural variant (SV) calling, filtering, annotation and consensus generation pipeline for Oxford Nanopore Technologies (ONT) long-read sequencing data.
 
 ### Key Features
 
@@ -34,7 +34,7 @@
 
 ## Workflow Overview
 
-![ontvar Workflow](docs/ontvar.svg)
+![ontvar Workflow](docs/ontvar.png)
 
 ## Usage
 
@@ -44,8 +44,8 @@
 The pipeline consists of the following major steps:
 
 1. **SV Calling**: Run Sniffles, cuteSV, and Severus callers on input samples
-2. **Sample Consensus**: Merge caller results per sample using Jasmine (caller support filter)
-3. **Population Annotation**: Add allele frequency information from gnomad and long-read sequencing based healthy population databases (using SVDB)
+2. **Sample Consensus**: Merge caller results per sample using Jasmine (with a configurable caller support threshold)
+3. **Population Annotation**: Add allele frequency information from gnomAD and long-read sequencing based healthy population database: needLR
 4. **Sample Filtering**: Remove common variants based on population frequencies
 5. **Sample Annotation**: Comprehensive AnnotSV annotation of sample variants
 6. **Cohort Merging**: Create cohort-wide merged callset using Jasmine
