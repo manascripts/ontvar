@@ -47,6 +47,7 @@ workflow NFCORE_ONTVAR {
     outdir
     reference
     annotsv_annotations
+    vcf2circos_config
 
     main:
 
@@ -57,11 +58,12 @@ workflow NFCORE_ONTVAR {
         samplesheet,
         outdir,
         reference,
-        annotsv_annotations
+        annotsv_annotations,
+        vcf2circos_config
     )
     emit:
     multiqc_report = ONTVAR.out.multiqc_report // channel: /path/to/multiqc_report.html
-    versions              = ONTVAR.out.versions
+    versions       = ONTVAR.out.versions
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,12 +88,13 @@ workflow {
 
     //
     // WORKFLOW: Run main workflow
-    //
+    //`
     NFCORE_ONTVAR (
         PIPELINE_INITIALISATION.out.samplesheet,
         params.outdir,
         params.reference,
-        params.annotsv_annotations ?: null
+        params.annotsv_annotations,
+        params.vcf2circos_config
     )
     //
     // SUBWORKFLOW: Run completion tasks

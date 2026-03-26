@@ -1,0 +1,6 @@
+name: vcf2circos
+channels:
+- bioconda
+dependencies:
+- bioconda::bcftools=1.23
+- bioconda::vcf2circos=1.2.0

@@ -618,6 +618,63 @@
                 }
             }
         },
+        "plot_circos_options": {
+            "title": "Plot circos options",
+            "type": "object",
+            "fa_icon": "fas fa-chart-pie",
+            "description": "Options for circos plotting with vcf2circos.",
+            "properties": {
+                "plot_circos": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Generate circos plots using vcf2circos.",
+                    "fa_icon": "fas fa-chart-pie"
+                    },
+                "circos_sources": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["per_sample", "per_sample_filtered", "cohort", "cohort_filtered"]
+                    },
+                    "default": ["per_sample", "per_sample_filtered", "cohort", "cohort_filtered"],
+                    "description": "Which AnnotSV VCF outputs to use for circos plots.",
+                    "fa_icon": "fas fa-list"
+                    },
+                "genome_assembly": {
+                    "type": "string",
+                    "default": "hg38",
+                    "enum": ["hg19", "hg38", "mm9", "mm10"],
+                    "description": "Genome assembly for vcf2circos.",
+                    "fa_icon": "fas fa-dna"
+                    },
+                "circos_format": {
+                    "type": "string",
+                    "default": "html",
+                    "enum": ["svg", "png", "jpg", "jpeg", "pdf", "eps", "webp", "json", "html"],
+                    "description": "Output format for circos plots.",
+                    "fa_icon": "fas fa-file-image"
+                },
+                "vcf2circos_config": {
+                    "type": ["string", "null"],
+                    "format": "path",
+                    "default": null,
+                    "description": "Path to local vcf2circos config directory or .tar.gz. If null, config is downloaded from vcf2circos_url.",
+                    "fa_icon": "fas fa-folder"
+                },
+                "vcf2circos_url": {
+                    "type": "string",
+                    "default": "https://www.lbgi.fr/~lamouche/vcf2circos/config_vcf2circos_21082023.tar.gz",
+                    "description": "URL to download vcf2circos config tarball (used only if vcf2circos_config is null).",
+                    "fa_icon": "fas fa-download"
+                },
+                "vcf2circos_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional arguments to pass to vcf2circos. These will be added to the auto-generated arguments.",
+                    "fa_icon": "fas fa-terminal"
+                }
+            }
+        },
         "general_options": {
             "title": "General options",
             "type": "object",
@@ -824,6 +881,9 @@
         },
         {
             "$ref": "#/$defs/annotsv_options"
+        },
+        {
+            "$ref": "#/$defs/plot_circos_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"

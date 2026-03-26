@@ -1,4 +1,3 @@
-
 process JASMINE_HEADER_FIX {
     tag "${meta.sample}"
     label 'process_low'

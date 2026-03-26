@@ -8,6 +8,8 @@ process FILTER_CHR {
         'https://depot.galaxyproject.org/singularity/jasminesv:1.1.5--hdfd78af_0':
         'biocontainers/jasminesv:1.1.5--hdfd78af_0' }"
 
+    // same container as jasmine
+
     input:
     tuple val(meta), path(vcf)
 

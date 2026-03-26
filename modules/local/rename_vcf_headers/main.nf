@@ -7,6 +7,8 @@ process RENAME_VCF_HEADERS {
         'https://depot.galaxyproject.org/singularity/jasminesv:1.1.5--hdfd78af_0':
         'biocontainers/jasminesv:1.1.5--hdfd78af_0' }"
 
+    // reuse jasmine container
+
     publishDir "${params.outdir}/renamed_vcfs", mode: 'copy', pattern: '*.vcf*'
 
     input:

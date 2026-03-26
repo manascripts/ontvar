@@ -1,0 +1,6 @@
+name: vcf2circos_config
+channels:
+- conda-forge
+- bioconda
+dependencies:
+- conda-forge::wget=1.25.0

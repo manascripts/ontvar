@@ -1,5 +1,7 @@
 name: summarize_sv_counts
 channels:
-  - defaults
+  - conda-forge
+  - bioconda
 dependencies:
-  - coreutils
+  - python=3.10
+  - bcftools=1.20
